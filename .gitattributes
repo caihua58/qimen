@@ -1,0 +1,7 @@
+# 保持行尾与字节原样，禁止 Git 做 CRLF 转换。
+#
+# 原因：
+#   · skill-patch/apply-patch.ps1 是 UTF-8 带 BOM 的 PowerShell 脚本，
+#     BOM 与行尾都必须原样保留（PowerShell 5.1 会把无 BOM 的 .ps1 当 ANSI 读而乱码）；
+#   · qimen-3d.html 是单文件交付物，已按字节做过语法与渲染校验。
+* -text

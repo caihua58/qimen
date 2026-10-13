@@ -1,0 +1,1871 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>立体奇门模型 · 阴遁七局（2026-10-02 14:54）</title>
+<style>
+:root{
+  --bg:#070910; --bg2:#0d1119; --panel:#0f141d; --line:#1d2635;
+  --ink:#dde5f0; --dim:#8494a8; --faint:#4d5a6b;
+  --gold:#e0b33c; --gold-dim:#8a6f22;
+  --cell:104px; --gap:10px; --pitch:114px; --grid:332px;
+  --rx:54; --rz:-30; --zm:0.86; --sep:66; --oy:78px; --slow:3;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:radial-gradient(1200px 700px at 30% 0%,#121a28 0%,var(--bg) 60%) fixed;
+  color:var(--ink);
+  font-family:"Noto Sans SC","PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+  display:grid; grid-template-rows:auto 1fr; overflow:hidden;
+}
+/* ---------- header ---------- */
+#hd{
+  display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+  padding:10px 18px; border-bottom:1px solid var(--line); background:rgba(10,13,20,.85);
+}
+.title{font-family:"Noto Serif SC","Songti SC",serif;font-size:19px;letter-spacing:.08em;white-space:nowrap}
+.title .sub{font-size:11px;color:var(--dim);letter-spacing:.04em;margin-left:10px;font-family:inherit}
+#chartinfo{font-size:12px;color:var(--dim);line-height:1.7;letter-spacing:.02em}
+#chartinfo b{color:var(--gold);font-weight:500}
+.tabs{margin-left:auto;display:flex;gap:4px}
+.tabs button{
+  background:transparent;border:1px solid var(--line);color:var(--dim);
+  padding:5px 13px;border-radius:99px;font-size:12px;cursor:pointer;font-family:inherit;
+}
+.tabs button.on{color:#0b0f16;background:var(--gold);border-color:var(--gold);font-weight:600}
+/* 动画速度档位 */
+.speed{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--dim);white-space:nowrap}
+.speed .slabel{letter-spacing:.06em;margin-right:2px}
+.speed button{background:transparent;border:1px solid var(--line);color:var(--dim);
+  padding:3px 8px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:11px}
+.speed button:hover{border-color:var(--gold);color:var(--gold)}
+.speed button.on{background:var(--gold);border-color:var(--gold);color:#0b0f16;font-weight:600}
+/* 起局：任意时间排盘 */
+.picker{display:flex;align-items:center;gap:6px}
+.picker input{background:rgba(255,255,255,.045);border:1px solid var(--line);color:var(--ink);
+  border-radius:6px;padding:3px 7px;font-size:11.5px;font-family:inherit;color-scheme:dark}
+#boundinfo{flex-basis:100%;font-size:11.5px;color:#e0a83c;line-height:1.7;margin-top:4px;
+  border-left:2px solid #8a6f22;padding-left:10px}
+/* 年命输入 */
+#nmbox{border:1px solid var(--line);border-radius:10px;padding:10px 11px;margin-bottom:14px;
+  background:rgba(224,179,60,.04)}
+#nmbox h3{margin:0 0 8px;border:none;padding:0}
+.nmrow{display:flex;align-items:center;gap:7px;margin-bottom:6px}
+.nmrow .nmlbl{font-family:"Noto Serif SC",serif;font-size:13px;color:var(--gold);width:16px}
+.nmrow input{flex:1;background:rgba(255,255,255,.045);border:1px solid var(--line);color:var(--ink);
+  border-radius:6px;padding:3px 6px;font-size:11.5px;font-family:inherit;color-scheme:dark;min-width:0}
+.nmrow em{font-style:normal;font-family:"Noto Serif SC",serif;font-size:13px;color:var(--ink);min-width:34px;text-align:right}
+#nmbox .btn{margin-right:6px}
+.nmnote{font-size:10.5px;color:var(--faint);line-height:1.7;margin-top:8px}
+.nmnote b{color:var(--dim);font-weight:500}
+.nmres{border:1px solid rgba(224,179,60,.22);border-radius:9px;padding:9px 10px;margin-top:8px;background:rgba(224,179,60,.05)}
+.nmres .nmhd{font-family:"Noto Serif SC",serif;font-size:14px;color:var(--gold);margin-bottom:5px}
+.nmres .nmbd{font-size:11.5px;color:var(--dim);line-height:1.85}
+.nmres .nmbd b{color:var(--ink);font-weight:500}
+.nmres .nmbd em{color:var(--gold);font-style:normal}
+/* ---------- main ---------- */
+main{display:grid;grid-template-columns:1fr 366px;overflow:hidden}
+.pane{display:none;overflow:hidden;position:relative}
+.pane.on{display:block}
+/* ---------- 3D stage ---------- */
+#pane-view3d{display:none}
+#pane-view3d.on{display:grid;grid-template-rows:1fr auto}
+#stage{
+  position:relative;overflow:hidden;perspective:1700px;min-height:330px;
+  display:grid;place-items:center;background:radial-gradient(700px 380px at 50% 42%,rgba(40,60,95,.28),transparent 70%);
+}
+#world{
+  position:relative;width:var(--grid);height:var(--grid);
+  transform-style:preserve-3d;
+  transform:translateY(var(--oy)) rotateX(calc(var(--rx)*1deg)) rotateZ(calc(var(--rz)*1deg)) scale(var(--zm));
+  transition:transform calc(.18s * var(--slow)) ease-out;
+}
+.layer{position:absolute;inset:0;transform-style:preserve-3d;will-change:transform}
+.layer.hide{display:none}
+.tile{
+  position:absolute;left:0;top:0;width:var(--cell);height:var(--cell);border-radius:11px;
+  border:1px solid rgba(255,255,255,.10);background:rgba(255,255,255,.028);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;
+  text-align:center;text-shadow:0 1px 6px rgba(0,0,0,.9);
+  transform:translate(0,0);transition:transform calc(.42s * var(--slow)) cubic-bezier(.45,.05,.3,1),box-shadow .18s,background .18s;
+  cursor:pointer;
+}
+.tile .big{font-family:"Noto Serif SC","Songti SC",serif;font-size:30px;line-height:1.05;letter-spacing:.02em}
+.tile .mid{font-family:"Noto Serif SC","Songti SC",serif;font-size:22px;line-height:1.1}
+.tile .sm{font-size:11px;color:var(--dim);letter-spacing:.06em}
+.tile .pl{position:absolute;top:4px;left:7px;font-size:9.5px;color:var(--faint);letter-spacing:.04em}
+.tile .tag{position:absolute;bottom:4px;right:7px;font-size:9.5px;color:var(--faint)}
+.tile:hover{background:rgba(255,255,255,.07)}
+.tile.hot{background:rgba(224,179,60,.13);border-color:rgba(224,179,60,.75);box-shadow:0 0 22px rgba(224,179,60,.35)}
+/* base graticule */
+.basecell{
+  position:absolute;left:0;top:0;width:var(--cell);height:var(--cell);border-radius:11px;
+  border:1px dashed rgba(255,255,255,.13);background:rgba(255,255,255,.012);
+}
+.basecell .g{position:absolute;top:5px;left:8px;font-size:11px;color:var(--faint);font-family:"Noto Serif SC",serif;letter-spacing:.05em}
+.basecell .d{position:absolute;bottom:5px;right:8px;font-size:10px;color:var(--faint)}
+.basecell.special{border-color:rgba(224,179,60,.35);border-style:solid}
+#axis{position:absolute;width:5px;border-radius:3px;transform-origin:50% 0;
+  background:linear-gradient(to top,rgba(224,179,60,0),rgba(224,179,60,.55));transform:rotateX(90deg);pointer-events:none}
+/* ---------- control bar ---------- */
+#stagebar{
+  border-top:1px solid var(--line);background:rgba(9,12,18,.92);
+  padding:7px 14px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  font-size:11px;color:var(--dim);line-height:1.5
+}
+.ctl{display:flex;align-items:center;gap:6px}
+.ctl input[type=range]{width:84px;accent-color:var(--gold)}
+.ctl .v{color:var(--gold);min-width:32px;display:inline-block}
+.btn{background:transparent;border:1px solid var(--line);color:var(--dim);padding:3px 9px;border-radius:6px;cursor:pointer;font-family:inherit;font-size:11px}
+.btn:hover{border-color:var(--gold);color:var(--gold)}
+.btn.on{background:var(--gold);border-color:var(--gold);color:#0b0f16;font-weight:600}
+.laytog{display:flex;gap:8px;flex-wrap:wrap}
+.laytog label{display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap}
+.laytog input{accent-color:var(--gold)}
+.dot{width:8px;height:8px;border-radius:2px;display:inline-block}
+/* ---------- side panel ---------- */
+aside{
+  border-left:1px solid var(--line);background:rgba(11,15,22,.9);
+  overflow-y:auto;padding:14px 16px 40px;
+}
+aside h2{font-family:"Noto Serif SC",serif;font-size:15px;font-weight:500;letter-spacing:.08em;margin-bottom:10px;color:var(--gold)}
+aside h3{font-size:11.5px;color:var(--dim);letter-spacing:.1em;margin:16px 0 7px;font-weight:500;border-bottom:1px solid var(--line);padding-bottom:5px}
+.pcard{border:1px solid var(--line);border-radius:10px;padding:11px 12px;background:rgba(255,255,255,.02)}
+.pcard .phead{display:flex;align-items:baseline;gap:8px;margin-bottom:9px}
+.pcard .pname{font-family:"Noto Serif SC",serif;font-size:26px;color:var(--gold);line-height:1}
+.pcard .pmeta{font-size:11px;color:var(--dim)}
+.srow{display:grid;grid-template-columns:52px 1fr;gap:9px;align-items:baseline;padding:5px 0;border-bottom:1px dotted rgba(255,255,255,.07)}
+.srow:last-child{border-bottom:none}
+.srow .k{font-size:11px;color:var(--dim);letter-spacing:.06em}
+.srow .v{font-family:"Noto Serif SC",serif;font-size:17px;letter-spacing:.03em}
+.srow .v small{font-size:11px;color:var(--dim);font-family:inherit;margin-left:7px;letter-spacing:.03em}
+.mk{display:inline-block;font-size:10px;padding:1px 6px;border-radius:99px;border:1px solid;margin-right:5px}
+.mk.gold{color:var(--gold);border-color:var(--gold-dim)}
+.mk.grey{color:var(--faint);border-color:var(--line)}
+.note{font-size:11.5px;color:var(--dim);line-height:1.85;margin-top:9px}
+.note b{color:var(--ink);font-weight:500}
+.note em{color:var(--gold);font-style:normal}
+/* ---------- flat view (对照排盘图) ---------- */
+#pane-flat{overflow:auto}
+.flatbar{display:flex;align-items:center;gap:9px;padding:12px 20px 10px;border-bottom:1px solid var(--line);
+  position:sticky;top:0;background:rgba(11,15,22,.96);z-index:3}
+.flatbar .chk{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--dim);cursor:pointer;margin-left:6px}
+.flatbar .chk input{accent-color:var(--gold)}
+#flatwrap{display:grid;grid-template-columns:repeat(3,minmax(180px,240px));gap:9px;padding:16px 20px}
+/* 注意：作者样式里的 display 会压过 [hidden] 的 display:none，必须显式声明 */
+#flatwrap[hidden],#flatfour[hidden],.flatbar .chk[hidden]{display:none}
+/* 分盘视图：天地人神 四张九宫图 */
+#flatfour{display:grid;grid-template-columns:repeat(2,minmax(330px,1fr));gap:14px;padding:16px 20px}
+.panel{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:rgba(255,255,255,.012)}
+.panel .ph{display:flex;align-items:baseline;gap:9px;padding:8px 13px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.022)}
+.panel .pname{font-family:"Noto Serif SC",serif;font-size:16px;letter-spacing:.14em}
+.panel .pdesc{font-size:11px;color:var(--dim)}
+.panel .pzn{margin-left:auto;font-size:10.5px;color:var(--faint);letter-spacing:.04em}
+.pgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;padding:10px}
+.pg{position:relative;aspect-ratio:1/1;border:1px solid var(--line);border-radius:9px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;
+  background:rgba(255,255,255,.014);cursor:pointer}
+.pg:hover{background:rgba(255,255,255,.05)}
+.pg.sel{border-color:rgba(224,179,60,.72);box-shadow:0 0 14px rgba(224,179,60,.16)}
+.pg .who{position:absolute;top:3px;left:7px;font-size:9.5px;color:var(--faint);font-family:"Noto Serif SC",serif}
+.pg .mk{position:absolute;top:3px;right:6px;font-size:9px;color:var(--gold-dim);letter-spacing:.04em}
+.pg .cv{font-family:"Noto Serif SC",serif;font-size:25px;line-height:1.12;text-shadow:0 1px 6px #000}
+.pg .cs{font-family:"Noto Serif SC",serif;font-size:13px;line-height:1.1}
+/* A. 跨图联动高亮：鼠标停在任一宫，四张图的同一宫同时亮起（须排在 .sel 之后） */
+.pg.link{border-color:rgba(224,179,60,.62);background:rgba(224,179,60,.10);box-shadow:0 0 12px rgba(224,179,60,.20)}
+.fcell.link{border-color:rgba(224,179,60,.62);background:rgba(224,179,60,.08)}
+.linkhint{font-size:11px;color:var(--faint);padding:0 20px 4px}
+/* ---------- B. 路径图 ---------- */
+#pane-path{overflow:auto}
+.pathbar{display:flex;align-items:center;gap:7px;flex-wrap:wrap;padding:12px 20px 10px;
+  border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(11,15,22,.96);z-index:3}
+.pathwrap{display:grid;grid-template-columns:minmax(400px,470px) minmax(280px,1fr);gap:22px;padding:18px 20px;align-items:start}
+#pathsvg{width:100%;height:auto;border:1px solid var(--line);border-radius:12px;background:rgba(255,255,255,.012);display:block}
+.pathdoc{font-size:12.6px;line-height:2;color:#c3cede}
+.pathdoc h4{font-family:"Noto Serif SC",serif;font-size:15.5px;margin:0 0 8px;font-weight:500;letter-spacing:.06em}
+.pathdoc p{margin:0 0 11px}
+.pathdoc .seq{font-family:"Noto Serif SC",serif;font-size:13px;line-height:2.1;color:var(--ink);
+  border:1px solid var(--line);border-radius:9px;padding:9px 12px;margin:0 0 11px;background:rgba(255,255,255,.018)}
+.pathdoc .seq b{color:var(--gold);font-weight:500}
+.pathdoc em{color:var(--gold);font-style:normal}
+.pathdoc code{background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:12px;color:var(--gold)}
+.pathdoc .hint{font-size:11.5px;color:var(--dim);border-left:2px solid var(--gold-dim);padding-left:11px;margin-top:12px}
+.fcell{position:relative;aspect-ratio:1/1;border:1px solid var(--line);border-radius:11px;
+  background:rgba(255,255,255,.015);display:flex;flex-direction:column;align-items:center;
+  justify-content:center;gap:7px;padding:10px;cursor:pointer}
+.fcell:hover{background:rgba(255,255,255,.04)}
+.fcell.sel{border-color:rgba(224,179,60,.7);box-shadow:0 0 18px rgba(224,179,60,.18)}
+.fcell.blank{background:rgba(224,179,60,.035)}
+.fcell .corner{position:absolute;top:6px;left:9px;font-size:12.5px;color:#6d788a;font-family:"Noto Serif SC",serif}
+.fcell .markr{position:absolute;top:6px;right:9px;font-size:10px;color:var(--gold-dim);letter-spacing:.06em}
+.fcell .r{display:flex;align-items:baseline;gap:10px;width:100%;justify-content:center}
+.fcell .god{font-family:"Noto Serif SC",serif;font-size:23px;text-shadow:0 1px 6px #000}
+.fcell .godsm{font-size:11px;color:var(--faint)}
+.fcell .star{font-family:"Noto Serif SC",serif;font-size:19px;text-shadow:0 1px 6px #000}
+.fcell .door{font-family:"Noto Serif SC",serif;font-size:19px;text-shadow:0 1px 6px #000}
+.fcell .stem{font-family:"Noto Serif SC",serif;font-size:16px;text-shadow:0 1px 6px #000}
+.fcell .midbig{font-family:"Noto Serif SC",serif;font-size:30px;color:var(--gold)}
+.fcell .midlbl{font-size:10.5px;color:var(--faint);letter-spacing:.08em}
+/* ---------- slice view ---------- */
+#pane-slice{padding:14px 18px;overflow:auto}
+.slicegrid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;max-width:1180px}
+.pcell{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:rgba(255,255,255,.015)}
+.pcell .ph{padding:6px 10px;background:rgba(224,179,60,.07);border-bottom:1px solid var(--line);
+  font-family:"Noto Serif SC",serif;font-size:13px;color:var(--gold);display:flex;justify-content:space-between}
+.pcell .ph span{font-family:inherit;font-size:10.5px;color:var(--dim)}
+.prow{display:grid;grid-template-columns:42px 1fr;border-bottom:1px dotted rgba(255,255,255,.06)}
+.prow:last-child{border-bottom:none}
+.prow .pk{font-size:10px;color:var(--faint);padding:6px 0 6px 9px;letter-spacing:.05em}
+.prow .pv{padding:6px 9px;font-family:"Noto Serif SC",serif;font-size:14px;letter-spacing:.03em}
+.prow .pv small{font-family:inherit;font-size:10.5px;color:var(--dim);margin-left:7px}
+.prow.hl{background:rgba(224,179,60,.09)}
+/* ---------- theory ---------- */
+#pane-theory{padding:20px 26px;overflow:auto}
+#pane-theory .doc{max-width:940px;font-size:13.2px;line-height:2.05;color:#c3cede}
+#pane-theory h2{font-family:"Noto Serif SC",serif;font-size:19px;color:var(--gold);letter-spacing:.08em;margin:6px 0 14px;font-weight:500}
+#pane-theory h4{font-family:"Noto Serif SC",serif;font-size:14.5px;color:var(--ink);margin:22px 0 8px;font-weight:500;letter-spacing:.05em}
+#pane-theory table{border-collapse:collapse;width:100%;margin:10px 0;font-size:12.3px}
+#pane-theory th,#pane-theory td{border:1px solid var(--line);padding:7px 10px;text-align:left}
+#pane-theory th{background:rgba(224,179,60,.06);color:var(--gold);font-weight:500}
+#pane-theory code{background:rgba(255,255,255,.05);padding:1px 6px;border-radius:4px;font-size:12px;color:var(--gold)}
+#pane-theory blockquote{border-left:2px solid var(--gold-dim);padding-left:14px;color:var(--dim);margin:12px 0}
+/* ---------- AI 解读 ---------- */
+#pane-ai{padding:16px 20px;overflow:auto}
+.aiwrap{display:grid;grid-template-columns:minmax(340px,1fr) minmax(340px,1fr);gap:20px;align-items:start}
+.aicol h4{font-family:"Noto Serif SC",serif;font-size:15px;font-weight:500;letter-spacing:.06em;
+  margin:0 0 8px;color:var(--gold);display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+.aicol h4 span{font-family:inherit;font-size:11px;color:var(--dim);font-weight:400;letter-spacing:0}
+.aibar{display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin-bottom:7px}
+.aibar input{background:rgba(255,255,255,.045);border:1px solid var(--line);color:var(--ink);
+  border-radius:6px;padding:4px 8px;font-size:11.5px;font-family:inherit;color-scheme:dark;flex:1;min-width:120px}
+#ai-task{width:100%;height:58vh;min-height:360px;resize:vertical;background:#0a0e15;color:#c9d4e2;
+  border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:11.5px;line-height:1.65;
+  font-family:"Cascadia Code",Consolas,"Courier New",monospace;white-space:pre;overflow:auto}
+.aiout{min-height:200px;max-height:58vh;overflow:auto;border:1px solid var(--line);border-radius:10px;
+  padding:12px 14px;background:rgba(255,255,255,.015);font-size:12.6px;line-height:1.95;color:#c9d4e2;
+  white-space:pre-wrap;word-break:break-word}
+.aiout:empty::before{content:"（解读结果会出现在这里）";color:var(--faint)}
+.ainote{font-size:11px;color:var(--dim);line-height:1.85;margin-top:9px}
+.ainote b{color:var(--ink);font-weight:500}
+.ainote code{background:rgba(255,255,255,.05);padding:1px 5px;border-radius:4px;font-size:10.5px;color:var(--gold)}
+.aicopied{font-size:11px;color:var(--gold)}
+.aistate{font-size:11px;color:var(--dim)}
+.aistate.err{color:#ff8a7a}
+.aistate.ok{color:#4fc27a}
+@media (max-width:1180px){ main{grid-template-columns:1fr} aside{display:none} }
+</style>
+</head>
+<body>
+
+<header id="hd">
+  <div class="title">立体奇门模型<span class="sub">神 · 天 · 人 · 地 · 隐　五层叠盘</span></div>
+  <div id="chartinfo"></div>
+  <div class="picker">
+    <input type="datetime-local" id="dt" step="60">
+    <button class="btn" id="go">起局</button>
+    <button class="btn" id="now">此刻</button>
+  </div>
+  <nav class="tabs">
+    <button data-tab="view3d" class="on">立体盘</button>
+    <button data-tab="flat">平面局（对照）</button>
+    <button data-tab="path">路径图</button>
+    <button data-tab="slice">竖读全盘</button>
+    <button data-tab="theory">模型说明</button>
+    <button data-tab="ai">AI 解读</button>
+  </nav>
+  <div class="speed" id="speed" title="演示动画时长倍数（越大越慢）"><span class="slabel">动画</span></div>
+  <div id="boundinfo" hidden></div>
+</header>
+
+<main>
+  <section class="pane on" id="pane-view3d">
+    <div id="stage"><div id="world">
+      <div class="layer" id="L-base"   data-zn="0" style="z-index:1"></div>
+      <div class="layer" id="L-yin"    data-zn="1"></div>
+      <div class="layer" id="L-di"     data-zn="2"></div>
+      <div class="layer" id="L-ren"    data-zn="3"></div>
+      <div class="layer" id="L-tian"   data-zn="4"></div>
+      <div class="layer" id="L-shen"   data-zn="5"></div>
+      <div id="axis"></div>
+    </div></div>
+    <div id="stagebar">
+      <div class="ctl">倾角<input type="range" id="rx" min="0" max="86" value="54"><span class="v" id="rxv">54°</span></div>
+      <div class="ctl">旋角<input type="range" id="rz" min="-180" max="180" value="-30"><span class="v" id="rzv">-30°</span></div>
+      <div class="ctl">层距<input type="range" id="sep" min="0" max="140" value="66"><span class="v" id="sepv">66</span></div>
+      <div class="ctl">缩放<input type="range" id="zm" min="45" max="150" value="86"><span class="v" id="zmv">.86</span></div>
+      <button class="btn" id="preset-top">顶视</button>
+      <button class="btn" id="preset-iso">立体</button>
+      <button class="btn" id="preset-side">侧视</button>
+      <button class="btn" id="spin">▶ 起局演示（转盘）</button>
+      <button class="btn" id="reset">复位</button>
+      <button class="btn" id="auto">自动旋转</button>
+      <div class="laytog" id="laytog"></div>
+    </div>
+  </section>
+
+  <section class="pane" id="pane-flat">
+    <div class="flatbar">
+      <button class="btn on" data-fm="1">合宫（对照排盘图）</button>
+      <button class="btn" data-fm="4">分盘 · 天地人神</button>
+      <label class="chk" id="yintog" hidden><input type="checkbox" id="flat-yin"> 并示隐层</label>
+    </div>
+    <div id="flatwrap"></div>
+    <div class="linkhint">鼠标停在任一宫 → 四张图的同一宫同时亮起</div>
+    <div id="flatfour" hidden></div>
+  </section>
+
+  <section class="pane" id="pane-path">
+    <div class="pathbar" id="pathbar"></div>
+    <div class="pathwrap">
+      <div>
+        <div id="pathsvg-wrap"></div>
+        <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
+          <button class="btn" id="path-walk">▶ 沿此路径走一遍</button>
+          <button class="btn" id="path-demo3d">在立体盘上演示转盘 →</button>
+        </div>
+      </div>
+      <div class="pathdoc" id="pathdoc"></div>
+    </div>
+  </section>
+
+  <section class="pane" id="pane-slice">
+    <div class="slicegrid" id="slicegrid"></div>
+  </section>
+
+  <section class="pane" id="pane-theory">
+    <div class="doc" id="theorydoc"></div>
+  </section>
+
+  <section class="pane" id="pane-ai">
+    <div class="aiwrap">
+      <div class="aicol">
+        <h4>① 解读任务书<span>自包含纯文本 · 不需要 Key，可复制到任何 AI</span></h4>
+        <div class="aibar">
+          <button class="btn" id="ai-rebuild">重新生成</button>
+          <button class="btn" id="ai-copy">复制任务书</button>
+          <span id="ai-copied" class="aicopied"></span>
+        </div>
+        <textarea id="ai-task" spellcheck="false"></textarea>
+        <div class="ainote">任务书只含<b>盘面事实</b>与<b>解读纪律</b>，不含任何结论——结论由 AI 自己推。
+          可直接粘到 <b>chat.deepseek.com</b> 或任何在线大模型。</div>
+      </div>
+      <div class="aicol">
+        <h4>② 页内直连 DeepSeek<span>可选 · Key 只存在你自己的浏览器里</span></h4>
+        <div class="aibar">
+          <input type="password" id="ai-key" placeholder="sk-…（只存 localStorage，不上传、不写进文件）" autocomplete="off">
+          <input type="text" id="ai-model" value="deepseek-chat" title="模型名">
+        </div>
+        <div class="aibar">
+          <button class="btn" id="ai-run">▶ 生成解读</button>
+          <button class="btn" id="ai-clr">清除 Key</button>
+          <span id="ai-state" class="aistate"></span>
+        </div>
+        <div id="ai-out" class="aiout"></div>
+        <div class="ainote">
+          ⚠️ 本页是<b>本地文件</b>，Key 仅写入浏览器 <code>localStorage</code>，不会进仓库、不会发给第三方；
+          但<b>别在公共电脑上填</b>。不想填 Key 就用左边那份任务书。<br>
+          接口：<code>https://api.deepseek.com/chat/completions</code>（已确认支持 file:// 直连）
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside id="side">
+    <div id="nmbox">
+      <h3>年命（用神第三人 · 可选）</h3>
+      <div class="nmrow"><span class="nmlbl">甲</span><input type="text" id="nm1" placeholder="1980-06-15 或 1980" autocomplete="off"><em id="nmr1"></em></div>
+      <div class="nmrow"><span class="nmlbl">乙</span><input type="text" id="nm2" placeholder="1985-11-02 或 1985" autocomplete="off"><em id="nmr2"></em></div>
+      <button class="btn" id="nmgo">套用年命</button>
+      <button class="btn" id="nmclr">清除</button>
+      <div class="nmnote">年命以<b>立春</b>为界取年柱。只填年份（如 <b>1980</b>）为粗算，按该年年中取值；
+        <b>生于 1–2 月者必须填真实日期</b>，否则年柱可能差一年。</div>
+    </div>
+    <div id="sidebody"></div>
+  </aside></main>
+
+<script id="paipan">
+/* ==========================================================================
+   PAIPAN —— 时家奇门排盘引擎（纯逻辑，无 DOM 依赖）
+   输入：公历 年 月 日 时 分（北京时间 UTC+8）
+   输出：四柱、所在节气、阴/阳遁、局数、旬首，以及喂给 MODEL 的四个参数
+
+   精度说明：节气时刻用 Meeus 低精度太阳视黄经（约 0.01°，折合约 15 分钟）。
+   已比对中国/日本天文台 2026 年 24 节气实测数据，误差见 verify-paipan.mjs。
+   距节气不足 60 分钟、或距子夜不足 30 分钟时，结果标记为 nearBoundary 提示核对。
+   ========================================================================== */
+const PAIPAN = (()=>{
+const RAD = Math.PI/180;
+const GAN = '甲乙丙丁戊己庚辛壬癸'.split('');
+const ZHI = '子丑寅卯辰巳午未申酉戌亥'.split('');
+const TERMS = ['立春','雨水','惊蛰','春分','清明','谷雨','立夏','小满','芒种','夏至',
+               '小暑','大暑','立秋','处暑','白露','秋分','寒露','霜降','立冬','小雪',
+               '大雪','冬至','小寒','大寒'];
+/* 节气起点太阳黄经（立春 315°，每节气 +15°） */
+const TERM_LON = TERMS.map((_,i)=>(315+15*i)%360);
+/* 二十四节气三元局数 [上元,中元,下元]（与《太白阴经·遁甲》所载一致） */
+const SANYUAN = {
+  立春:[8,5,2], 雨水:[9,6,3], 惊蛰:[1,7,4], 春分:[3,9,6], 清明:[4,1,7], 谷雨:[5,2,8],
+  立夏:[4,1,7], 小满:[5,2,8], 芒种:[6,3,9], 夏至:[9,3,6], 小暑:[8,2,5], 大暑:[7,1,4],
+  立秋:[2,5,8], 处暑:[1,4,7], 白露:[9,3,6], 秋分:[7,1,4], 寒露:[6,9,3], 霜降:[5,8,2],
+  立冬:[6,9,3], 小雪:[5,8,2], 大雪:[4,7,1], 冬至:[1,7,4], 小寒:[2,8,5], 大寒:[3,9,6]
+};
+/* ---- 1. 儒略日（输入按 UT） ---- */
+function toJD(y,m,d,h,mi){
+  let yy=y, mm=m;
+  if(mm<=2){ yy-=1; mm+=12; }
+  const A=Math.floor(yy/100), B=2-A+Math.floor(A/4);
+  return Math.floor(365.25*(yy+4716)) + Math.floor(30.6001*(mm+1)) + d + B - 1524.5
+       + ((h||0) + (mi||0)/60)/24;
+}
+/* ---- 2. JD → 公历（用于显示） ---- */
+function jdToYMD(jd){
+  const z=Math.floor(jd+0.5), f=jd+0.5-z;
+  let A=z;
+  if(z>=2299161){ const al=Math.floor((z-1867216.25)/36524.25); A=z+1+al-Math.floor(al/4); }
+  const B=A+1524, C=Math.floor((B-122.1)/365.25), D=Math.floor(365.25*C),
+        E=Math.floor((B-D)/30.6001);
+  const day=B-D-Math.floor(30.6001*E)+f, di=Math.floor(day);
+  const m=(E<14)?E-1:E-13, y=(m>2)?C-4716:C-4715;
+  let hh=(day-di)*24, h=Math.floor(hh), mm=Math.round((hh-h)*60);
+  if(mm===60){ mm=0; h++; }
+  return {y,m,d:di,h,mi:mm};
+}
+/* ---- 3. ΔT = TT − UT（秒） ---- */
+function deltaT(y){
+  if(y>=2005 && y<2050){ const t=y-2000; return 62.92+0.32217*t+0.005589*t*t; }
+  if(y>=1986 && y<2005){ const t=y-2000; return 63.86+0.3345*t-0.060374*t*t+0.0017275*t*t*t
+      +0.000651814*t*t*t*t+0.00002373599*t*t*t*t*t; }
+  if(y>=1900 && y<1986){ const t=(y-1900)/100;
+    return -2.79+1.494119*t-0.0598939*t*t+0.0061966*t*t*t-0.000197*t*t*t*t; }
+  const u=(y-1820)/100; return -20+32*u*u;   /* 粗略外推 */
+}
+/* ---- 4. 太阳视黄经（度），jde 为力学时儒略日 · Meeus 低精度式 ---- */
+function sunLon(jde){
+  const T=(jde-2451545.0)/36525;
+  const L0=280.46646+36000.76983*T+0.0003032*T*T;
+  const M =(357.52911+35999.05029*T-0.0001537*T*T)*RAD;
+  const C =(1.914602-0.004817*T-0.000014*T*T)*Math.sin(M)
+          +(0.019993-0.000101*T)*Math.sin(2*M)
+          + 0.000289*Math.sin(3*M);
+  const Om=(125.04-1934.136*T)*RAD;
+  const lam=L0+C-0.00569-0.00478*Math.sin(Om);
+  return ((lam%360)+360)%360;
+}
+/* ---- 5. 某年「黄经 = target」的节气儒略日（UT） ---- */
+function termJD(year, target){
+  const k=(((target-315)%360)+360)%360/15;              /* 立春=0 */
+  const guess=toJD(year,2,4,0,0)+k*15.2184;
+  const f=jd=>{ const d=sunLon(jd+deltaT(year)/86400)-target;
+                return ((d+180)%360+360)%360-180; };
+  let lo=guess-18, hi=guess+18;
+  for(let i=0;i<24 && f(lo)>0;i++) lo-=5;
+  for(let i=0;i<24 && f(hi)<0;i++) hi+=5;
+  for(let i=0;i<60;i++){ const mid=(lo+hi)/2; if(f(mid)<0) lo=mid; else hi=mid; }
+  return (lo+hi)/2;
+}
+/* ---- 6. 60 甲子定位 ---- */
+function solve60(g,z){ for(let n=0;n<60;n++) if(n%10===g && n%12===z) return n; return -1; }
+/* ---- 7. 排盘主函数 ---- */
+function paipan(y,mo,d,hh,mi){
+  const jdUT = toJD(y,mo,d,hh,mi) - 8/24;               /* 北京时间 → UT */
+  /* 取 y-1..y+1 三年的节气，排序后找当前区间 */
+  const list=[];
+  for(const yy of [y-1,y,y+1])
+    TERMS.forEach((name,i)=> list.push({name, i, lon:TERM_LON[i],
+      jd:termJD(yy,TERM_LON[i]), baseYear:yy}));
+  list.sort((a,b)=>a.jd-b.jd);
+  let ti=0;
+  for(let i=0;i<list.length-1;i++) if(list[i].jd<=jdUT && jdUT<list[i+1].jd){ ti=i; break; }
+  const cur=list[ti], nxt=list[ti+1];
+  /* 年柱：以立春为界 */
+  let lc=null; for(const t of list) if(t.i===0 && t.jd<=jdUT) lc=t;
+  const gzYear = lc ? lc.baseYear : y;
+  const yGan=((gzYear-4)%10+10)%10, yZhi=((gzYear-4)%12+12)%12;
+  /* 月柱：以「节」为界（立春起的偶数索引） */
+  let jie=null; for(const t of list) if(t.i%2===0 && t.jd<=jdUT) jie=t;
+  const mStep=jie.i/2;                                   /* 立春=0 → 寅月 */
+  const mZhi=(2+mStep)%12;
+  const mGan=([2,4,6,8,0][yGan%5]+mStep)%10;             /* 甲己丙作首…戊癸甲寅求 */
+  /* 日柱：子时换日（23 时起算次日） */
+  const jdn0=Math.floor(toJD(y,mo,d,12,0));
+  const dayIdx=((( jdn0 + (hh>=23?1:0) )-2451545+54)%60+60)%60;
+  const dGan=dayIdx%10, dZhi=dayIdx%12;
+  /* 时柱：五鼠遁 */
+  const hZhi=(hh===23)?0:Math.floor((hh+1)/2)%12;
+  const hGan=((dGan%5)*2+hZhi)%10;
+  const hour60=solve60(hGan,hZhi);
+  const XUN_STEPS=hour60%10;                             /* 时柱在旬中的序数（旬首=0） */
+  const xunIdx=hour60-XUN_STEPS;
+  /* 旬首之仪：甲子旬戊、甲戌旬己、甲申旬庚、甲午旬辛、甲辰旬壬、甲寅旬癸 */
+  const XUN_GAN='戊己庚辛壬癸'[xunIdx/10];
+  const dayXunIdx=dayIdx-(dayIdx%10);                    /* 日柱所在旬 */
+  /* 拆补法：回溯到最近的甲/己日（符头），由其地支定上中下元 */
+  let fuIdx=dayIdx;
+  for(let i=0;i<7 && GAN[fuIdx%10]!=='甲' && GAN[fuIdx%10]!=='己';i++) fuIdx=(fuIdx-1+60)%60;
+  const fz=fuIdx%12;
+  const yuan=[0,6,3,9].includes(fz)?0 : [2,8,5,11].includes(fz)?1 : 2;   /* 0上 1中 2下 */
+  /* 阴阳遁：冬至(21)…芒种(8) 用阳遁，夏至(9)…大雪(20) 用阴遁 */
+  const YANG=(cur.i>=21 || cur.i<=8);
+  const JU=SANYUAN[cur.name][yuan];
+  const YUAN_NAME=['上元','中元','下元'][yuan];
+  /* 边界提示 */
+  const minToNext=(nxt.jd-jdUT)*1440;
+  const minFromCur=(jdUT-cur.jd)*1440;
+  const minutesToMidnight=(()=>{ const t=jdUT+8/24; const fr=t-Math.floor(t+0.5)+0.5;
+    const h=fr*24; return Math.min(h,24-h)*60; })();
+  const nearBoundary = Math.min(minToNext,minFromCur) < 60 || minutesToMidnight < 30;
+  return {
+    input:{y,mo,d,hh,mi},
+    jdUT,
+    sizhu:{
+      year: GAN[yGan]+ZHI[yZhi],
+      month: GAN[mGan]+ZHI[mZhi],
+      day:   GAN[dGan]+ZHI[dZhi],
+      hour:  GAN[hGan]+ZHI[hZhi]
+    },
+    term: cur.name, termJD: cur.jd, termTime: jdToYMD(cur.jd+8/24),
+    nextTerm: nxt.name, nextJD: nxt.jd, nextTime: jdToYMD(nxt.jd+8/24),
+    minutesToNext: minToNext, minutesFromTerm: minFromCur,
+    fuTou: GAN[fuIdx%10]+ZHI[fz], yuan, yuanName: YUAN_NAME,
+    yindun: !YANG, YANG, JU, xun: GAN[xunIdx%10]+ZHI[xunIdx%12],
+    xunDay: GAN[dayXunIdx%10]+ZHI[dayXunIdx%12],
+    SHIGAN: GAN[hGan], XUN_STEPS, XUN_GAN,
+    /* 直接喂给 MODEL 的五个参数 */
+    model:{YANG, JU, SHIGAN:GAN[hGan], XUN_GAN, XUN_STEPS},
+    nearBoundary, minutesToMidnight
+  };
+}
+/* ---- 8. 只取年柱（供年命用，以立春为界） ---- */
+function yearGZ(y,mo,d){
+  const jdUT = toJD(y,mo,d,12,0) - 8/24;
+  const lc = termJD(y,315);                       /* 该公历年的立春 */
+  const gzY = (jdUT < lc) ? y-1 : y;
+  return GAN[((gzY-4)%10+10)%10] + ZHI[((gzY-4)%12+12)%12];
+}
+/* ---- 9. 格式化 ---- */
+const pad=n=>String(n).padStart(2,'0');
+function fmtTime(t){ return `${t.y}-${pad(t.m)}-${pad(t.d)} ${pad(t.h)}:${pad(t.mi)}`; }
+return {GAN,ZHI,TERMS,TERM_LON,SANYUAN,toJD,jdToYMD,deltaT,sunLon,termJD,paipan,yearGZ,fmtTime};
+})();
+</script>
+
+<script id="model">
+/* ==========================================================================
+   MODEL —— 纯逻辑，无 DOM 依赖。可被 verify-model.mjs 提取并断言。
+   ========================================================================== */
+
+/* 九宫：洛书定位（南上）。row/col 为屏幕网格坐标（0..2） */
+const PALACES = {
+  4:{num:'四',gua:'巽',dir:'东南',wx:'木',row:0,col:0},
+  9:{num:'九',gua:'离',dir:'南',  wx:'火',row:0,col:1},
+  2:{num:'二',gua:'坤',dir:'西南',wx:'土',row:0,col:2},
+  3:{num:'三',gua:'震',dir:'东',  wx:'木',row:1,col:0},
+  5:{num:'五',gua:'中',dir:'中',  wx:'土',row:1,col:1},
+  7:{num:'七',gua:'兑',dir:'西',  wx:'金',row:1,col:2},
+  8:{num:'八',gua:'艮',dir:'东北',wx:'土',row:2,col:0},
+  1:{num:'一',gua:'坎',dir:'北',  wx:'水',row:2,col:1},
+  6:{num:'六',gua:'乾',dir:'西北',wx:'金',row:2,col:2}
+};
+/* 八宫环序：屏幕顺时针（巽→离→坤→兑→乾→坎→艮→震） */
+const RING = [4,9,2,7,6,1,8,3];
+const ri = p => RING.indexOf(p);
+const baseOf = (fin,k) => RING[((ri(fin)-k)%8+8)%8];   /* 落宫 → 本宫 */
+const destOf = (base,k) => RING[(ri(base)+k)%8];        /* 本宫 → 落宫 */
+
+/* 三奇六仪次序（地盘顺布/逆布用它） */
+const YIQI = ['戊','己','庚','辛','壬','癸','丁','丙','乙'];
+
+/* ===== 配置：换一局只改这四行 ===== */
+const YANG = false;   /* true = 阳遁（本模型的阳遁分支未作校验）；false = 阴遁 */
+const JU = 7;         /* 局数 */
+const SHIGAN = '辛';  /* 时干：值符加时干，定天盘落点 */
+const XUN_STEPS = 7;  /* 时柱在旬中的序数（旬首＝0；甲子旬·辛未时 → 7），定值使落点 */
+
+/* 地盘：戊起于局数宫，阳遁顺布、阴遁逆布 */
+function dipanOf(n,yang){
+  const o={}; let p=n;
+  for(const g of YIQI){ o[p]=g; p = yang ? (p===9?1:p+1) : (p===1?9:p-1); }
+  return o;
+}
+/* 八门本宫、九星本宫 */
+const MEN_BEN  = {1:'休门',2:'死门',3:'伤门',4:'杜门',6:'开门',7:'惊门',8:'生门',9:'景门'};
+const XING_BEN = {1:'天蓬',2:'天芮',3:'天冲',4:'天辅',5:'天禽',6:'天心',7:'天柱',8:'天任',9:'天英'};
+/* 显示名：中宫天禽寄坤二，故坤二之芮星随行时并称「天芮禽」 */
+const XING_SHOW= {1:'天蓬',2:'天芮禽',3:'天冲',4:'天辅',5:'天禽',6:'天心',7:'天柱',8:'天任',9:'天英'};
+/* 八神序：自值符宫起，沿八宫环递增方向排布
+   阴遁逆布 → 本序列；阳遁顺布 → 反序 */
+const SHEN_SEQ = YANG
+  ? ['值符','腾蛇','太阴','六合','白虎','玄武','九地','九天']
+  : ['值符','九天','九地','玄武','白虎','六合','太阴','腾蛇'];
+
+/* 暗干：以时干加值使门宫，阳遁顺布、阴遁逆布三奇六仪 */
+function anganOf(startPalace,startGan,yang){
+  const i = YIQI.indexOf(startGan);
+  const o={}; let p=startPalace;
+  for(let n=0;n<9;n++){ o[p]=YIQI[(i+n)%9]; p = yang ? (p===9?1:p+1) : (p===1?9:p-1); }
+  return o;
+}
+
+/* ==========================================================================
+   由配置推导：值符、值使、各盘转数、三盘落宫 —— 全部算出，不手写。
+   buildModel(cfg) 可对任意一局重建，cfg = {YANG, JU, SHIGAN, XUN_STEPS}
+   ========================================================================== */
+function buildModel(cfg){
+  const YANG=cfg.YANG, JU=cfg.JU, XUN_STEPS=cfg.XUN_STEPS;
+  const DIPAN = dipanOf(JU, YANG);                 /* 地盘奇仪（不动） */
+  const palaceOfGan = g => +(Object.keys(DIPAN).find(k => DIPAN[k] === g));
+  /* 旬首之仪：甲子旬用戊、甲戌旬用己、甲申旬用庚、甲午旬用辛、甲辰旬用壬、甲寅旬用癸。
+     旬首宫＝该仪在地盘所在之宫（并非恒等于局数宫）。*/
+  const XUN_GAN = cfg.XUN_GAN || '戊';
+  const XUNSHOU_GONG = palaceOfGan(XUN_GAN);
+  const ZHIFU_GONG   = XUNSHOU_GONG;               /* 值符本宫 */
+  /* 时干为「甲」时，即旬首本身，落宫同旬首宫（甲不出现在地盘上） */
+  const SHIGAN = (cfg.SHIGAN === '甲') ? XUN_GAN : cfg.SHIGAN;
+  /* 值使落宫：自旬首宫起，阳遁顺行、阴遁逆行，数 XUN_STEPS 步 */
+  const stepPalace = (p,n) => { for(let i=0;i<n;i++) p = YANG ? (p===9?1:p+1) : (p===1?9:p-1); return p; };
+  const ZHISHI_P = stepPalace(XUNSHOU_GONG, XUN_STEPS);
+  /* 转盘步数＝八宫环上的位移（每步 45°），由落宫反推 */
+  const K_TIAN = ((ri(palaceOfGan(SHIGAN)) - ri(ZHIFU_GONG)) % 8 + 8) % 8;
+  const K_REN  = ((ri(ZHISHI_P) - ri(XUNSHOU_GONG)) % 8 + 8) % 8;
+  const K_SHEN = K_TIAN;                           /* 八神随值符 */
+  const ZHIFU_LUO  = destOf(ZHIFU_GONG, K_TIAN);   /* 值符落宫 */
+  const ZHISHI_LUO = destOf(XUNSHOU_GONG, K_REN);  /* 值使落宫 */
+  const ANGAN = anganOf(ZHISHI_LUO, SHIGAN, YANG); /* 暗干 */
+  /* 天盘：星随天盘旋转，携带本宫地盘之干 */
+  const TIANPAN = {};
+  for(const b of RING) TIANPAN[destOf(b,K_TIAN)] = {xing:XING_SHOW[b], gan:DIPAN[b], base:b};
+  /* 人盘：八门旋转 */
+  const RENPAN = {};
+  for(const b of RING) RENPAN[destOf(b,K_REN)] = {men:MEN_BEN[b], base:b};
+  /* 神盘：八神旋转（自值符宫起）；地盘八神为其未旋转之底 */
+  const SHENPAN = {}, DIPAN_SHEN = {};
+  for(const b of RING){
+    const s = SHEN_SEQ[((ri(b)-ri(ZHIFU_GONG))%8+8)%8];
+    DIPAN_SHEN[b] = s;
+    SHENPAN[destOf(b,K_SHEN)] = {shen:s, base:b};
+  }
+  return {YANG,JU,SHIGAN,XUN_GAN,XUN_STEPS,XUNSHOU_GONG,DIPAN,ZHIFU_GONG,palaceOfGan,stepPalace,
+          ZHISHI_P,K_TIAN,K_REN,K_SHEN,ZHIFU_LUO,ZHISHI_LUO,ANGAN,
+          TIANPAN,RENPAN,SHENPAN,DIPAN_SHEN};
+}
+
+/* ---- 神煞：地支→宫、旬空、驿马 ---- */
+const JU_CN = {1:'一',2:'二',3:'三',4:'四',5:'五',6:'六',7:'七',8:'八',9:'九'};
+const ZHI_GONG = {子:1,丑:8,寅:8,卯:3,辰:4,巳:4,午:9,未:2,申:2,酉:7,戌:6,亥:6};
+const XUN_KONG = {'甲子':['戌','亥'],'甲戌':['申','酉'],'甲申':['午','未'],
+                  '甲午':['辰','巳'],'甲辰':['寅','卯'],'甲寅':['子','丑']};
+/* 驿马：申子辰马在寅、寅午戌马在申、巳酉丑马在亥、亥卯未马在巳 */
+function maZhi(z){
+  if('申子辰'.includes(z)) return '寅';
+  if('寅午戌'.includes(z)) return '申';
+  if('巳酉丑'.includes(z)) return '亥';
+  return '巳';
+}
+const shenSha = (zhi,xun)=>{
+  const kong=XUN_KONG[xun]||[], ma=maZhi(zhi);
+  /* 两支可能同宫（如戌亥同属乾宫），需去重 */
+  const kongGong=[...new Set(kong.map(z=>ZHI_GONG[z]))];
+  return {kong, kongGong, ma, maGong:ZHI_GONG[ma]};
+};
+
+/* ==========================================================================
+   阴符层 —— 把《黄帝阴符经》的义理落成可计算量
+   经文依据（唐·张果注本 / 通行本 / 云笈七签本 / 王道渊本，四本互校）：
+     ·「爰有奇器，是生万象。八卦甲子，神机鬼藏。」→ 九宫八卦 + 六十甲子，即奇门之器
+     ·「天有五贼，见之者昌。」                → 五行相克关系统计（门迫／门制／星克／干克）
+     ·「三盗既宜，三才既安。」                → 天／地／人 三盘互相生克，尽生则「宜」
+     ·「天人合德（通行本、李筌本作：天人合发），万变定基。」→ 天盘干与地盘干相合
+     ·「人发杀机，天地反复。」                → 反吟（天盘环移 180°）
+     ·「其盗机也，天下莫能见，莫能知也。」     → 伏吟（天盘不移，藏而不显）
+     ·「阴阳相胜之术，昭昭乎进乎象矣。」       → 阴阳遁与顺逆布仪
+   说明：此层是「以经文义理立的分析层」，非古传奇门格局；只作识别与提示，不给吉凶打分。
+   ========================================================================== */
+const WX_SHENG = {木:'火', 火:'土', 土:'金', 金:'水', 水:'木'};   /* 相生 */
+const WX_KE    = {木:'土', 土:'水', 水:'火', 火:'金', 金:'木'};   /* 相克＝「贼」 */
+const GAN_WX   = {甲:'木',乙:'木',丙:'火',丁:'火',戊:'土',己:'土',庚:'金',辛:'金',壬:'水',癸:'水'};
+const GAN_HE   = {甲:'己',己:'甲',乙:'庚',庚:'乙',丙:'辛',辛:'丙',丁:'壬',壬:'丁',戊:'癸',癸:'戊'};
+const XING_WX  = {天蓬:'水',天芮:'土',天芮禽:'土',天冲:'木',天辅:'木',天禽:'土',天心:'金',天柱:'金',天任:'土',天英:'火'};
+const MEN_WX   = {休门:'水',生门:'土',伤门:'木',杜门:'木',景门:'火',死门:'土',惊门:'金',开门:'金'};
+/* a 对 b 的五行关系（用于「五贼」与「三盗」） */
+function wxRel(a,b,na,nb){
+  if(!a || !b) return null;
+  if(a===b)          return {type:'比和', text:`${na}与${nb}同属${a}`, zei:null};
+  if(WX_SHENG[a]===b) return {type:'生',   text:`${na}(${a})生${nb}(${b})`, zei:null};
+  if(WX_SHENG[b]===a) return {type:'被生', text:`${nb}(${b})生${na}(${a})`, zei:null};
+  if(WX_KE[a]===b)    return {type:'克',   text:`${na}(${a})克${nb}(${b})`, zei:`${a}贼${b}`};
+  return                 {type:'被克', text:`${nb}(${b})克${na}(${a})`, zei:`${b}贼${a}`};
+}
+/* 逐宫阴符 */
+function yinfuOf(p, M){
+  const gw = PALACES[p].wx;                       /* 宫五行 */
+  const t  = M.TIANPAN[p] || {};
+  const r  = M.RENPAN[p]  || {};
+  const mw = r.men ? MEN_WX[r.men] : null;
+  const sw = t.xing ? XING_WX[t.xing] : null;
+  const tgw = t.gan ? GAN_WX[t.gan] : null;
+  const dgw = GAN_WX[M.DIPAN[p]];
+  /* 五贼：凡出现相克即记为「贼」 */
+  const zei = [];
+  const push = (rel, who) => { if(rel && rel.zei) zei.push(`${rel.zei}（${who}）`); };
+  const menGong = wxRel(mw, gw, r.men||'门', '宫');      /* 门 vs 宫 → 门迫／门制 */
+  const xingGong= wxRel(sw, gw, t.xing||'星', '宫');     /* 星 vs 宫 */
+  const ganGan  = wxRel(tgw, dgw, '天盘'+(t.gan||''), '地盘'+M.DIPAN[p]); /* 干 vs 干 */
+  push(menGong, '门与宫'); push(xingGong, '星与宫'); push(ganGan, '干与干');
+  /* 门迫／门制 */
+  let po = null;
+  if(menGong){
+    if(menGong.type === '克')   po = '门迫';   /* 门克宫 */
+    if(menGong.type === '被克') po = '门制';   /* 宫克门 */
+  }
+  /* 三盗：地→人（宫与门）、人→天（门与星）、天→地（天盘干与地盘干） */
+  const sanDao = {
+    '地盗人（宫·门）': menGong,
+    '人盗天（门·星）': wxRel(mw, sw, r.men||'门', t.xing||'星'),
+    '天盗地（干·干）': ganGan
+  };
+  const yi = Object.values(sanDao).every(v => !v || v.type==='生' || v.type==='被生' || v.type==='比和');
+  /* 天人合德：天盘干与地盘干相合 */
+  const he = t.gan && GAN_HE[t.gan] === M.DIPAN[p];
+  return {p, gw, menGong, xingGong, ganGan, po, zei, sanDao, yi, he,
+          men:r.men, xing:t.xing, ganT:t.gan, ganD:M.DIPAN[p]};
+}
+/* 全盘阴符状态 */
+function yinfuGlobal(M){
+  const all = {};
+  for(const p of RING) all[p] = yinfuOf(p, M);
+  const heGong = RING.filter(p => all[p].he);
+  return {
+    byPalace: all,
+    反吟: M.K_TIAN === 4,          /* 天地反复 */
+    伏吟: M.K_TIAN === 0,          /* 莫能见 */
+    合德宫: heGong,                /* 天人合德 */
+    不宜宫: RING.filter(p => !all[p].yi),   /* 三盗不宜 */
+    贼宫:   RING.filter(p => all[p].zei.length) /* 见贼 */
+  };
+}
+
+/* ---- 局象元数据：值符/值使/空亡/驿马 全部实时推算 ---- */
+function buildChart(meta, M){
+  const g  = n => PALACES[n].gua + PALACES[n].num + '宫';
+  const gs = a => a.map(n=>PALACES[n].gua+PALACES[n].num+'宫').join('／');
+  const hz = shenSha(meta.sizhu.hour[1], meta.xun);
+  const dz = shenSha(meta.sizhu.day[1],  meta.xunDay || meta.xun);
+  const marks = {};
+  const add = (p,t)=>{ marks[p]=marks[p]||[]; if(!marks[p].includes(t)) marks[p].push(t); };
+  add(M.ZHIFU_LUO,'值符'); add(M.ZHISHI_LUO,'值使');
+  hz.kongGong.forEach(p=>add(p,'空亡'));
+  dz.kongGong.forEach(p=>add(p,'日空'));
+  add(hz.maGong,'驿马');
+  /* ---- 年命（用神第三人）：年支落宫，与值符/值使并列 ---- */
+  const SHENG = {木:'火',火:'土',土:'金',金:'水',水:'木'};
+  const rel = (a,b)=>{
+    if(!a || !b) return null;
+    if(a===b) return '同宫';
+    const wa=PALACES[a].wx, wb=PALACES[b].wx;
+    if(SHENG[wa]===wb) return '年命宫生之';
+    if(SHENG[wb]===wa) return '受其生';
+    if(SHENG[SHENG[wa]]===wb) return '年命宫克之';
+    if(SHENG[SHENG[wb]]===wa) return '被其克';
+    return '比和';
+  };
+  const nmList = meta.nianming || [];
+  nmList.forEach(nm=> add(nm.gong, '年命' + nm.label));
+  const nianming = nmList.map(nm=>{
+    const P = PALACES[nm.gong];
+    const t = M.TIANPAN[nm.gong]||{}, r = M.RENPAN[nm.gong]||{}, s = M.SHENPAN[nm.gong]||{};
+    return {
+      label:nm.label, gz:nm.gz, gong:nm.gong, gongName:P.gua+P.num+'宫', dir:P.dir, wx:P.wx,
+      kong: hz.kongGong.includes(nm.gong) ? '时空' : (dz.kongGong.includes(nm.gong) ? '日空' : null),
+      relZhifu: rel(nm.gong, M.ZHIFU_LUO), relZhishi: rel(nm.gong, M.ZHISHI_LUO),
+      stack:{ shen:s.shen, xing:t.xing, ganT:t.gan, men:r.men,
+              ganD:M.DIPAN[nm.gong], angan:M.ANGAN[nm.gong], dshen:M.DIPAN_SHEN[nm.gong] }
+    };
+  });
+  return {
+    title: meta.title,
+    sizhu: `${meta.sizhu.year}年 · ${meta.sizhu.month}月 · ${meta.sizhu.day}日 · ${meta.sizhu.hour}时`,
+    ju: `${meta.yindun?'阴遁':'阳遁'}${JU_CN[meta.JU]}局 · ${meta.xun}旬`,
+    term: meta.term, yuanName: meta.yuanName, fuTou: meta.fuTou,
+    zhifu:  `${M.TIANPAN[M.ZHIFU_LUO].xing}（落${g(M.ZHIFU_LUO)}）`,
+    zhishi: `${M.RENPAN[M.ZHISHI_LUO].men}（落${g(M.ZHISHI_LUO)}）`,
+    kong: `时空${hz.kong.join('')}（${gs(hz.kongGong)}）· 日空${dz.kong.join('')}（${gs(dz.kongGong)}）`,
+    ma:   `时马${hz.ma}（${g(hz.maGong)}）· 日马${dz.ma}`,
+    marks, meta, nianming,
+    nianmingSame: (nmList.length===2 && nmList[0].gong===nmList[1].gong),
+    yinfu: yinfuGlobal(M)
+  };
+}
+
+/* ---- 层定义 ---- */
+const LAYERS = [
+  {key:'yin',  zn:1, name:'隐盘', sub:'暗干 · 地盘八神', color:'#9c8ad0'},
+  {key:'di',   zn:2, name:'地盘', sub:'三奇六仪（不动）', color:'#c99a5b'},
+  {key:'ren',  zn:3, name:'人盘', sub:'八门',            color:'#4fc27a'},
+  {key:'tian', zn:4, name:'天盘', sub:'九星 · 天盘奇仪',  color:'#5b9bf0'},
+  {key:'shen', zn:5, name:'神盘', sub:'八神',            color:'#e0b33c'}
+];
+
+/* ---- 默认局：2026-10-02 14:54（与手机排盘逐宫比对过） ---- */
+const DEFAULT_PP = {
+  title:'2026年10月2日（农历八月廿二）14:54',
+  sizhu:{year:'丙午', month:'丁酉', day:'己酉', hour:'辛未'},
+  term:'秋分', yuanName:'上元', fuTou:'己酉', yindun:true, JU:7,
+  xun:'甲子', xunDay:'甲辰',
+  model:{YANG:false, JU:7, SHIGAN:'辛', XUN_GAN:'戊', XUN_STEPS:7}
+};
+
+const MODEL = Object.assign(
+  {PALACES,RING,ri,baseOf,destOf,YIQI,dipanOf,MEN_BEN,XING_BEN,XING_SHOW,SHEN_SEQ,anganOf,
+   ZHI_GONG,XUN_KONG,maZhi,shenSha,JU_CN,buildModel,buildChart,LAYERS,DEFAULT_PP,
+   WX_SHENG,WX_KE,GAN_WX,GAN_HE,XING_WX,MEN_WX,wxRel,yinfuOf,yinfuGlobal},
+  buildModel(DEFAULT_PP.model));
+
+let M, CHART;
+/* 顶层别名：每次换局同步刷新，UI 直接读这些名字 */
+let DIPAN, XUNSHOU_GONG, ZHIFU_GONG, palaceOfGan, stepPalace, ZHISHI_P,
+    K_TIAN, K_REN, K_SHEN, ZHIFU_LUO, ZHISHI_LUO, ANGAN,
+    TIANPAN, RENPAN, SHENPAN, DIPAN_SHEN;
+/* 换局入口：任何排盘结果 → 重建模型与局象 */
+function applyChart(pp){
+  M = buildModel(pp.model);
+  CHART = buildChart(pp, M);
+  MODEL.M = M; MODEL.CHART = CHART;
+  Object.assign(MODEL, M);         /* 顶层副本同步刷新（校验脚本读它） */
+  ({DIPAN,XUNSHOU_GONG,ZHIFU_GONG,palaceOfGan,stepPalace,ZHISHI_P,
+    K_TIAN,K_REN,K_SHEN,ZHIFU_LUO,ZHISHI_LUO,ANGAN,
+    TIANPAN,RENPAN,SHENPAN,DIPAN_SHEN} = M);
+  return {M, CHART};
+}
+applyChart(DEFAULT_PP);
+</script>
+
+<script id="ui">
+/* ==========================================================================
+   UI —— 渲染与交互
+   ========================================================================== */
+const WXC = {水:'#5b9bf0',木:'#4fc27a',火:'#ff6b5e',土:'#e0b33c',金:'#d9d9e3'};
+const GAN_C = {乙:'#4fc27a',丙:'#ff6b5e',丁:'#ff9f9a',戊:'#d9d9e3',己:'#c9b98f',
+               庚:'#ffd24a',辛:'#b9c6d6',壬:'#5b9bf0',癸:'#9c8ad0'};
+const SHEN_C = {值符:'#ffd24a',腾蛇:'#ff6b5e',太阴:'#b9c6d6',六合:'#4fc27a',
+                白虎:'#e8e2d0',玄武:'#5b9bf0',九地:'#c98a1f',九天:'#ff9f43'};
+const MEN_C  = {开门:'#d9d9e3',惊门:'#d9d9e3',休门:'#5b9bf0',生门:'#e0b33c',死门:'#e0b33c',
+                伤门:'#4fc27a',杜门:'#4fc27a',景门:'#ff6b5e'};
+const JIMEN = new Set(['开门','休门','生门']);
+const XING_C = {天蓬:'#5b9bf0',天芮:'#e0b33c',天芮禽:'#e0b33c',天冲:'#4fc27a',天辅:'#4fc27a',
+                天禽:'#e0b33c',天心:'#d9d9e3',天柱:'#d9d9e3',天任:'#e0b33c',天英:'#ff6b5e'};
+const C=104, G=10, PITCH=C+G;
+const px = p => ({x:PALACES[p].col*PITCH, y:PALACES[p].row*PITCH});
+const tr = (x,y) => `translate(${x}px,${y}px)`;
+let sel = 4, spinBusy = false, autoTimer = null;
+
+/* ---------- 动画速度 ----------
+   时长倍数：1 = 原速，2 = 慢一倍，3 = 慢两倍……（数值越大越慢）
+   所有演示动画都读这一个值；CSS 侧用 --slow 供 .tile / #world 的 transition 取用 */
+let ANIM_SLOW = 3;
+const dur  = ms => Math.round(ms * ANIM_SLOW);      /* 毫秒 */
+const durS = s  => +(s * ANIM_SLOW).toFixed(3);     /* 秒（给 transition 用） */
+function setSlow(v){
+  ANIM_SLOW = +v;
+  document.documentElement.style.setProperty('--slow', ANIM_SLOW);
+  document.querySelectorAll('#speed [data-slow]')
+    .forEach(b=> b.classList.toggle('on', +b.dataset.slow === ANIM_SLOW));
+}
+document.getElementById('speed').insertAdjacentHTML('beforeend',
+  [1,2,3,4].map(v=>`<button data-slow="${v}">×${v}</button>`).join(''));
+document.querySelectorAll('#speed [data-slow]').forEach(b=> b.onclick=()=>setSlow(b.dataset.slow));
+setSlow(ANIM_SLOW);
+
+/* ---------- header ---------- */
+function renderHeader(){
+  const ci=document.getElementById('chartinfo');
+  ci.innerHTML = `${CHART.title}<br>${CHART.sizhu}　·　<b>${CHART.ju}</b>　·　${CHART.term}·${CHART.yuanName}<br>`+
+    `值符 <b>${CHART.zhifu}</b>　值使 <b>${CHART.zhishi}</b>　｜　${CHART.kong}　｜　${CHART.ma}`;
+  const bi=document.getElementById('boundinfo');
+  if(bi){
+    bi.hidden = !CHART.meta.nearBoundary;
+    bi.textContent = CHART.meta.nearBoundary
+      ? `⚠ 边界提示：距${CHART.meta.minutesFromTerm<CHART.meta.minutesToNext?CHART.term:'下个节气'}交节约 ${Math.round(Math.min(CHART.meta.minutesFromTerm,CHART.meta.minutesToNext))} 分钟，或临近子夜；节气/日柱判定可能翻转，请核对。`
+      : '';
+  }
+}
+
+/* ---------- build layers ---------- */
+const world = document.getElementById('world');
+function el(tag,cls,html){const d=document.createElement(tag);if(cls)d.className=cls;if(html!=null)d.innerHTML=html;return d;}
+
+/* 内容层 */
+function tileHTML(layer,p){
+  if(layer==='yin'){
+    const g = ANGAN[p], s = DIPAN_SHEN[p]||'—';
+    return `<span class="pl">暗干</span><span class="big" style="color:${GAN_C[g]||'#ccc'}">${g}</span>`+
+           `<span class="sm" style="color:${SHEN_C[s]||'#888'}">${s}</span>`;
+  }
+  if(layer==='di'){
+    const g = DIPAN[p];
+    return `<span class="pl">地盘</span><span class="big" style="color:${GAN_C[g]||'#ccc'}">${g}</span>`;
+  }
+  if(layer==='ren'){
+    const d = RENPAN[p]; if(!d) return '';
+    return `<span class="pl">门</span><span class="mid" style="color:${MEN_C[d.men]||'#ccc'}">${d.men}</span>`+
+           (JIMEN.has(d.men)?'<span class="tag" style="color:#e0b33c">吉</span>':'');
+  }
+  if(layer==='tian'){
+    const d = TIANPAN[p]; if(!d) return '';
+    return `<span class="pl">星</span><span class="mid" style="color:${XING_C[d.xing]||'#ccc'}">${d.xing}</span>`+
+           `<span class="sm" style="color:${GAN_C[d.gan]||'#888'}">${d.gan}</span>`;
+  }
+  if(layer==='shen'){
+    const d = SHENPAN[p]; if(!d) return '';
+    return `<span class="pl">神</span><span class="mid" style="color:${SHEN_C[d.shen]||'#ccc'}">${d.shen}</span>`;
+  }
+  return '';
+}
+const SPECZN = {yin:1, di:2, ren:3, tian:4, shen:5};
+const DOM = {};   /* layer -> array of {node,palace,base} */
+
+/* 建盘：换局时整层重建（tileHTML 与 base 都随新局变） */
+function buildLayers(){
+  const Lbase = document.getElementById('L-base');
+  Lbase.innerHTML = '';
+  for(const p of [4,9,2,3,5,7,8,1,6]){
+    const P=PALACES[p], q=px(p), c=el('div','basecell'+(CHART.marks[p]?' special':''));
+    c.style.transform = tr(q.x,q.y);
+    c.innerHTML = `<div class="g">${P.num} ${P.gua}宫</div><div class="d">${P.dir} · ${P.wx}</div>`;
+    c.onclick = ()=>select(p);
+    Lbase.appendChild(c);
+  }
+  const KP = {yin:0, di:0, ren:K_REN, tian:K_TIAN, shen:K_SHEN};
+  for(const key of ['yin','di','ren','tian','shen']){
+    const L = document.getElementById('L-'+key);
+    L.querySelectorAll('.tile,.basecell').forEach(n=>n.remove());
+    DOM[key]=[];
+    const k = KP[key];
+    for(const p of RING){
+      const q = px(p);
+      const t = el('div','tile',tileHTML(key,p));
+      t.dataset.p = p;
+      t.style.transform = tr(q.x,q.y);
+      t.onclick = ()=>{ if(!spinBusy) select(p); };
+      L.appendChild(t);
+      DOM[key].push({node:t, palace:p, base: k? baseOf(p,k) : p});
+    }
+    /* 中宫空位标记 */
+    if(key!=='di'&&key!=='yin'){
+      const q=px(5), m=el('div','basecell','<div class="g" style="opacity:.5">中五</div>');
+      m.style.transform=tr(q.x,q.y); m.style.opacity='.35'; m.style.pointerEvents='none';
+      L.appendChild(m);
+    }
+  }
+}
+
+/* 中轴 */
+function updateAxis(){
+  const sep = +getComputedStyle(document.documentElement).getPropertyValue('--sep');
+  const a = document.getElementById('axis');
+  a.style.left = (PITCH+ C/2 - 2.5)+'px';
+  a.style.top  = (PITCH + C/2)+'px';
+  a.style.height = Math.max(6, sep*5)+'px';
+}
+
+/* ---------- select / highlight ---------- */
+function select(p){
+  sel = p;
+  for(const key in DOM){
+    for(const d of DOM[key]) d.node.classList.toggle('hot', d.palace===p);
+  }
+  renderSide();
+  renderSlice();
+  renderFlat();
+  renderFlatFour();
+}
+function renderSide(){
+  const P=PALACES[sel], t=TIANPAN[sel]||{}, r=RENPAN[sel]||{}, s=SHENPAN[sel]||{};
+  const marks=(CHART.marks[sel]||[]).map(m=>
+    `<span class="mk ${m==='值符'||m==='值使'?'gold':'grey'}">${m}</span>`).join('');
+  let h = `<h2>本宫竖读</h2>
+  <div class="pcard">
+    <div class="phead"><span class="pname">${P.gua}</span>
+      <span class="pmeta">${P.num}宫 · ${P.dir} · 五行${P.wx} · 洛书${({坎:1,坤:2,震:3,巽:4,中:5,乾:6,兑:7,艮:8,离:9})[P.gua]}</span></div>
+    <div style="margin-bottom:9px">${marks||'<span class="mk grey">无标记</span>'}</div>
+    <div class="srow"><span class="k">神盘</span><span class="v" style="color:${SHEN_C[s.shen]||'#888'}">${s.shen||'—'}
+      <small>八神${s.base?`（本宫 ${PALACES[s.base].gua}${PALACES[s.base].num}）`:''}</small></span></div>
+    <div class="srow"><span class="k">天盘</span><span class="v" style="color:${XING_C[t.xing]||'#888'}">${t.xing||'—'}
+      <small>${t.gan?`携干 `:''}<span style="color:${GAN_C[t.gan]||'#888'}">${t.gan||''}</span>${t.base?`（本宫 ${PALACES[t.base].gua}${PALACES[t.base].num}）`:''}</small></span></div>
+    <div class="srow"><span class="k">人盘</span><span class="v" style="color:${MEN_C[r.men]||'#888'}">${r.men||'—'}
+      <small>${r.base?`本宫 ${PALACES[r.base].gua}${PALACES[r.base].num}`:''}${JIMEN.has(r.men)?' · 三吉门':''}</small></span></div>
+    <div class="srow"><span class="k">地盘</span><span class="v" style="color:${GAN_C[DIPAN[sel]]||'#888'}">${DIPAN[sel]||'—'}
+      <small>三奇六仪</small></span></div>
+    <div class="srow"><span class="k">隐层</span><span class="v" style="color:${GAN_C[ANGAN[sel]]||'#888'}">${ANGAN[sel]||'—'}
+      <small>暗干 · ${DIPAN_SHEN[sel]||'—'}</small></span></div>
+  </div>`;
+  /* ---- 年命（用神第三人） ---- */
+  if(CHART.nianming && CHART.nianming.length){
+    h += `<h3>年命 · 用神第三人</h3>`;
+    for(const nm of CHART.nianming){
+      const st = nm.stack;
+      h += `<div class="nmres">
+        <div class="nmhd">${nm.label} · 年命 ${nm.gz} → ${nm.gongName}（${nm.dir}·${nm.wx}）</div>
+        <div class="nmbd">
+          神 <b>${st.shen||'—'}</b>　星 <b>${st.xing||'—'}</b>${st.ganT?` 携 <b>${st.ganT}</b>`:''}　门 <b>${st.men||'—'}</b><br>
+          地盘 <b>${st.ganD||'—'}</b>　暗干 <b>${st.angan||'—'}</b>　地盘八神 <b>${st.dshen||'—'}</b><br>
+          ${nm.relZhifu?`与值符宫：<em>${nm.relZhifu}</em>　`:''}${nm.relZhishi?`与值使宫：<em>${nm.relZhishi}</em>`:''}
+          ${nm.kong?`<br><em>⚠ 年命宫逢${nm.kong}</em> —— 古法主「心不实、位置悬、事难落实」`:''}
+        </div></div>`;
+    }
+    if(CHART.nianmingSame)
+      h += `<div class="nmres"><div class="nmbd"><em>两人年命同宫</em>：主「同类相吸、彼此看得懂」，
+            但也意味着<b>共用一个落点</b>——该宫吉凶会同时落在双方身上，须看它是否逢空、有否吉门吉星。</div></div>`;
+    h += `<div class="nmnote">年命以<b>立春</b>为界取年柱，取年支所落之宫为主；年干另参盘中是否有此干。</div>`;
+  } else {
+    h += `<h3>年命</h3><div class="nmnote">未填。年命是时家奇门的<b>第三个用神</b>（与日干、时干并列），
+          用于定「人」、看事是否真落在本人身上。<br>在左栏填出生日期后点「套用年命」即可。</div>`;
+  }
+
+  /* ---- 阴符层 ---- */
+  if(CHART.yinfu){
+    const gn = n => PALACES[n].gua + PALACES[n].num + '宫';
+    const Y = CHART.yinfu, yp = Y.byPalace[sel];
+    const st = [];
+    st.push(Y.反吟 ? '<em>反吟</em>（人发杀机，天地反复）' : (Y.伏吟 ? '<em>伏吟</em>（其盗机也，天下莫能见）' : '天盘已移，未成伏吟反吟'));
+    if(Y.合德宫.length) st.push(`<em>天人合德</em>：${Y.合德宫.map(gn).join('、')}`);
+    st.push(`<em>三盗不宜</em>：${Y.不宜宫.length ? Y.不宜宫.map(gn).join('、') : '无（三才既安）'}`);
+    st.push(`<em>见贼</em>：${Y.贼宫.length ? Y.贼宫.map(gn).join('、') : '无'}`);
+    h += `<h3>阴符（本宫）</h3><div class="nmres"><div class="nmbd">`;
+    if(yp){
+      h += `宫 ${gn(sel)}·${yp.gw}　门 ${yp.men||'—'}${yp.menGong?`（${yp.menGong.text}）`:''}`
+        +  (yp.po?`　<b>${yp.po}</b>`:'') + `<br>`
+        +  `星 ${yp.xing||'—'}${yp.xingGong?`（${yp.xingGong.text}）`:''}<br>`
+        +  `天盘 ${yp.ganT||'—'} · 地盘 ${yp.ganD}　${yp.ganGan?yp.ganGan.text:''}<br>`
+        +  `五贼：${yp.zei.length ? yp.zei.join('；') : '本宫不见贼'}`
+        +  `　三盗：${yp.yi ? '<em>既宜</em>（三才既安）' : '<em>不宜</em>'}`
+        +  (yp.he ? `<br><em>天人合德</em>：天盘${yp.ganT}与地盘${yp.ganD}相合` : '');
+    } else {
+      h += `中五宫无门无星，庚寄坤二，此处不列。`;
+    }
+    h += `</div></div><h3>阴符（全盘）</h3><div class="nmres"><div class="nmbd">${st.join('<br>')}</div></div>
+      <div class="nmnote">依《黄帝阴符经》：「爰有奇器，是生万象。八卦甲子，神机鬼藏」——
+      九宫八卦与六十甲子即奇门之器。此层只作<b>识别与提示</b>，不给吉凶打分。</div>`;
+  }
+
+  h += `<h3>本局参数</h3>
+  <div class="note">
+    <b>局：</b>${CHART.ju}<br>
+    <b>值符：</b>${CHART.zhifu}<br>
+    <b>值使：</b>${CHART.zhishi}<br>
+    <b>空亡：</b>${CHART.kong}<br>
+    <b>驿马：</b>${CHART.ma}<br>
+    <b>天盘旋转：</b>${K_TIAN}步 × 45° = <em>${K_TIAN*45}°</em>（值符加时干）<br>
+    <b>人盘旋转：</b>${K_REN}步 × 45° = <em>${K_REN*45}°</em>（值使数旬）<br>
+    <b>神盘旋转：</b>${K_SHEN}步 × 45° = <em>${K_SHEN*45}°</em>（随值符）
+  </div>
+  <h3>竖读法</h3>
+  <div class="note">同一宫，自下往上读：<em>地（三奇六仪）→ 人（门）→ 天（星＋干）→ 神</em>。
+  再叠上<em>隐层</em>（暗干与地盘八神），即是一宫的完整断面。<br>
+  横读一层，是「盘」；竖读一柱，才是「宫」。</div>`;
+  document.getElementById('sidebody').innerHTML = h;
+}
+
+/* ---------- flat view：复刻排盘图版式，用于 1:1 核对 ---------- */
+const FLAT_ORDER=[4,9,2,3,5,7,8,1,6];
+/* A. 跨图联动高亮：同一 data-p 的所有格子一起亮 */
+function linkHover(p,on){
+  document.querySelectorAll(`#pane-flat [data-p="${p}"]`).forEach(e=> e.classList.toggle('link',on));
+}
+function bindCell(c){
+  const p=+c.dataset.p;
+  c.onclick=()=>select(p);
+  c.onmouseenter=()=>linkHover(p,true);
+  c.onmouseleave=()=>linkHover(p,false);
+}
+function renderFlat(){
+  const wrap=document.getElementById('flatwrap'); if(!wrap) return;
+  let h='';
+  for(const p of FLAT_ORDER){
+    const P=PALACES[p];
+    const mk=(CHART.marks[p]||[]).join(' ');
+    if(p===5){
+      h+=`<div class="fcell blank${p===sel?' sel':''}" data-p="${p}">
+        <span class="corner" style="color:${GAN_C[ANGAN[5]]||'#888'}">${ANGAN[5]}</span>
+        <span class="midlbl">中五宫</span>
+        <span class="midbig">${DIPAN[5]}</span>
+        <span class="midlbl">庚 · 天禽寄坤二 · 无门无神</span></div>`;
+      continue;
+    }
+    const t=TIANPAN[p]||{}, r=RENPAN[p]||{}, s=SHENPAN[p]||{};
+    const jiyu = (p===2) ? `<div class="midlbl" style="position:absolute;bottom:6px;right:9px">中宫庚寄此</div>` : '';
+    h+=`<div class="fcell${p===sel?' sel':''}" data-p="${p}">
+      <span class="corner" style="color:${GAN_C[ANGAN[p]]||'#888'}">${ANGAN[p]||''}</span>
+      <span class="markr">${mk}</span>
+      <div class="r">
+        <span class="god" style="color:${SHEN_C[s.shen]||'#888'}">${s.shen||''}</span>
+        <span class="godsm" style="color:${SHEN_C[DIPAN_SHEN[p]]||'#888'}">${DIPAN_SHEN[p]||''}</span>
+      </div>
+      <div class="r">
+        <span class="star" style="color:${XING_C[t.xing]||'#888'}">${t.xing||''}</span>
+        <span class="stem" style="color:${GAN_C[t.gan]||'#888'}">${t.gan||''}</span>
+      </div>
+      <div class="r">
+        <span class="door" style="color:${MEN_C[r.men]||'#888'}">${r.men||''}</span>
+        <span class="stem" style="color:${GAN_C[DIPAN[p]]||'#888'}">${DIPAN[p]||''}</span>
+      </div>
+      <div class="midlbl" style="position:absolute;bottom:6px;left:9px">${P.num}${P.gua}·${P.dir}</div>
+      ${jiyu}
+    </div>`;
+  }
+  wrap.innerHTML=h;
+  wrap.querySelectorAll('.fcell').forEach(bindCell);
+}
+
+/* ---------- 分盘视图：把平面拆成 天／地／人／神 四张九宫图 ---------- */
+const FOUR = [
+  {k:'tian', zn:4, name:'天盘', desc:'九星 · 天盘奇仪',        color:'#5b9bf0'},
+  {k:'di',   zn:2, name:'地盘', desc:'三奇六仪（不动）',        color:'#c99a5b'},
+  {k:'ren',  zn:3, name:'人盘', desc:'八门',                  color:'#4fc27a'},
+  {k:'shen', zn:5, name:'神盘', desc:'八神',                  color:'#e0b33c'},
+  {k:'yin',  zn:1, name:'隐层', desc:'暗干 · 地盘八神',        color:'#9c8ad0', extra:true}
+];
+function renderFlatFour(){
+  const wrap=document.getElementById('flatfour'); if(!wrap) return;
+  const withYin=document.getElementById('flat-yin').checked;
+  let h='';
+  for(const L of FOUR){
+    if(L.extra && !withYin) continue;
+    h+=`<div class="panel"><div class="ph">
+      <span class="pname" style="color:${L.color}">${L.name}</span>
+      <span class="pdesc">${L.desc}</span>
+      <span class="pzn">立体模型 · 第 ${L.zn} 层</span></div><div class="pgrid">`;
+    for(const p of FLAT_ORDER){
+      const P=PALACES[p], mk=(CHART.marks[p]||[]).join(' ');
+      let cv='', cs='', c='#3b4553', csc='var(--dim)';
+      if(L.k==='tian'){ const t=TIANPAN[p]; if(t){ cv=t.xing; cs=t.gan; c=XING_C[t.xing]||'#888'; csc=GAN_C[t.gan]||'#888'; } }
+      if(L.k==='di'){   const g=DIPAN[p];  cv=g; cs=(p===5?'中宫寄坤二':P.num+P.gua+'·'+P.dir); c=GAN_C[g]||'#888'; }
+      if(L.k==='ren'){  const r=RENPAN[p]; if(r){ cv=r.men; cs=JIMEN.has(r.men)?'三吉门':''; c=MEN_C[r.men]||'#888'; csc='#e0b33c'; } }
+      if(L.k==='shen'){ const s=SHENPAN[p]; if(s){ cv=s.shen; c=SHEN_C[s.shen]||'#888'; } }
+      if(L.k==='yin'){  cv=ANGAN[p]||''; cs=DIPAN_SHEN[p]||''; c=GAN_C[ANGAN[p]]||'#888'; csc=SHEN_C[DIPAN_SHEN[p]]||'#888'; }
+      if(!cv){ cv='—'; cs=''; }
+      h+=`<div class="pg${p===sel?' sel':''}" data-p="${p}">
+        <span class="who">${P.num}${P.gua}</span><span class="mk">${mk}</span>
+        <span class="cv" style="color:${c}">${cv}</span>
+        ${cs?`<span class="cs" style="color:${csc}">${cs}</span>`:''}
+      </div>`;
+    }
+    h+='</div></div>';
+  }
+  wrap.innerHTML=h;
+  wrap.querySelectorAll('.pg').forEach(bindCell);
+}
+/* 平面局模式切换 */
+let flatMode=1;
+function setFlatMode(m){
+  flatMode=+m;
+  document.querySelectorAll('#pane-flat .flatbar [data-fm]').forEach(x=> x.classList.toggle('on', +x.dataset.fm===flatMode));
+  document.getElementById('flatwrap').hidden = flatMode!==1;
+  document.getElementById('flatfour').hidden = flatMode!==4;
+  document.getElementById('yintog').hidden   = flatMode!==4;
+  document.querySelector('.linkhint').hidden = flatMode!==4;
+  if(flatMode===4) renderFlatFour();
+}
+document.querySelectorAll('#pane-flat .flatbar [data-fm]').forEach(b=> b.onclick=()=>setFlatMode(b.dataset.fm));
+document.getElementById('flat-yin').onchange=renderFlatFour;
+
+/* ---------- B. 路径图：把九宫里的几条走法画出来 ---------- */
+const PV={cell:120, pitch:128, org:18};
+const pvCenter=p=>{const P=PALACES[p];return{x:PV.org+P.col*PV.pitch+PV.cell/2, y:PV.org+P.row*PV.pitch+PV.cell/2};};
+const GONG_CN={1:'坎',2:'坤',3:'震',4:'巽',5:'中',6:'乾',7:'兑',8:'艮',9:'离'};
+const GONG_NUM={1:'一',2:'二',3:'三',4:'四',5:'五',6:'六',7:'七',8:'八',9:'九'};
+const gName=p=>GONG_NUM[p]+GONG_CN[p];
+
+/* 路径随局而变：全部由当前 M 推出，不手写 */
+const ringFrom=(from,steps)=>{const o=[],i0=ri(from);for(let n=0;n<=steps;n++)o.push(RING[(i0+n)%8]);return o;};
+const numFrom =(from,steps)=>{const o=[from];let p=from;for(let i=0;i<steps;i++){p=stepPalace(p,1);o.push(p);}return o;};
+let PATHS={};
+function pathDefs(){
+  const A=XUNSHOU_GONG, W=PALACES[A].gua+PALACES[A].num;      /* 旬首宫，如「兑七」 */
+  const zfP=M.ZHIFU_LUO, zsP=M.ZHISHI_LUO;
+  const zfN=PALACES[zfP].gua+PALACES[zfP].num, zsN=PALACES[zsP].gua+PALACES[zsP].num;
+  const zfStar=M.TIANPAN[zfP].xing, zsMen=M.RENPAN[zsP].men, sg=M.SHIGAN, zfGan=DIPAN[A];
+  const yn=M.YANG?'顺':'逆';
+  const diff=M.K_REN-M.K_TIAN;
+  return {
+    feibo:{name:'洛书飞泊序（1→9）',color:'#4fd1c5',order:[1,2,3,4,5,6,7,8,9],closed:false,
+      title:'洛书飞泊序（1 → 9）',
+      desc:'顺着<b>宫数</b>走，穿过中宫。飞盘奇门与九宫飞星走这一条；本局的<b>地盘布仪</b>与<b>暗干</b>也走这条，只是方向相反。',
+      hint:'这条路走「宫数顺序」，在盘上是<b>折线</b>，且<b>必经中五宫</b>。'},
+    huan:{name:'八宫环序（转盘）',color:'#e0b33c',order:RING.slice(),closed:true,
+      title:'八宫环序（转盘所行）',
+      desc:'沿<b>八宫外圈</b>走一圈，回到起点。转盘奇门的星、门、神都走这一条。',
+      hint:'这条路<b>不经过中宫</b>——中宫是轴，不是路径上的一站。'},
+    di:{name:`本局地盘${yn}布`,color:'#c99a5b',order:YIQI.map(g=>palaceOfGan(g)),closed:false,labels:'gan',
+      title:`本局地盘${yn}布`,
+      desc:`${zfGan}起于<b>${W}</b>，然后按<b>宫数${yn}行</b>，依次布三奇六仪。`,
+      hint:'对照「八宫环序」可以看出：<b>地盘不走环、走宫数</b>；而天盘／人盘／神盘是<b>整盘绕圈转</b>。两套完全不同的运动。'},
+    zhifu:{name:`值符加时干（天盘 ${M.K_TIAN} 步）`,color:'#5b9bf0',order:ringFrom(A,M.K_TIAN),closed:false,
+      title:`值符加时干 · 天盘 ${M.K_TIAN} 步`,
+      desc:`旬首${zfGan}在<b>${W}</b>。值符<b>${zfStar}</b>自${W}起，沿八宫环走 <b>${M.K_TIAN} 步</b>，落在 <b>${zfN}</b>。<br>而时干<b>${sg}</b>的地盘宫正是${zfN}——这就叫「<b>值符加时干</b>」。`,
+      hint:`${M.K_TIAN} × 45° = <b>${M.K_TIAN*45}°</b>。天盘整盘转 ${M.K_TIAN*45}°，${zfStar}落${zfN}，其余八星依次跟到。`},
+    zhishi:{name:`值使落宫（宫数${yn}数 ${M.XUN_STEPS} 步）`,color:'#c86fd0',order:numFrom(A,M.XUN_STEPS),closed:false,
+      title:`值使落宫 · 宫数${yn}数 ${M.XUN_STEPS} 步`,
+      desc:`值使<b>${zsMen}</b>同样起于${W}，但走法<b>不是环转</b>，而是自旬首<b>按宫数${yn}行</b>数到<b>时柱</b>。<br>本局时柱在旬中为第 ${M.XUN_STEPS+1} 位，起始宫不计，故数 <b>${M.XUN_STEPS} 步</b>，落在 <b>${zsN}</b>。`,
+      hint:'注意它可能<b>穿过中五宫</b>，与天盘走法明显不同——所以两者必须分开算。'},
+    renring:{name:`八门盘环转（${M.K_REN} 步）`,color:'#4fc27a',order:ringFrom(A,M.K_REN),closed:false,
+      title:`八门整盘环转 · ${M.K_REN} 步`,
+      desc:`值使门落到${zsN}后，其余七门随之<b>整盘刚性环转</b>——在八宫环上等于走 <b>${M.K_REN} 步</b>，终点<b>${zsN}</b>。`,
+      hint:`${M.K_REN} × 45° = <b>${M.K_REN*45}°</b>。天盘 ${M.K_TIAN} 步、人盘 ${M.K_REN} 步`
+        +(diff>0?`，<b>人盘比天盘多走 ${diff} 步</b>`:(diff<0?`，<b>天盘比人盘多走 ${-diff} 步</b>`:'，两盘步数相同'))
+        +`——这正是角速度不同的根源。`}
+  };
+}
+let pathMode='zhifu', pathTimer=null;
+
+function buildPath(){
+  PATHS=pathDefs();
+  const P=PATHS[pathMode], S=[];
+  for(const p of FLAT_ORDER){
+    const PL=PALACES[p], q=pvCenter(p), on=P.order.includes(p);
+    S.push(`<rect x="${PV.org+PL.col*PV.pitch}" y="${PV.org+PL.row*PV.pitch}" width="${PV.cell}" height="${PV.cell}" rx="11" fill="${on?'rgba(255,255,255,.032)':'rgba(255,255,255,.012)'}" stroke="#1d2635"/>`);
+    S.push(`<text x="${q.x}" y="${q.y-21}" text-anchor="middle" fill="#7d8899" font-size="12">${GONG_NUM[p]}${GONG_CN[p]}宫</text>`);
+    const big=(P.labels==='gan')?(DIPAN[p]||''):GONG_NUM[p];
+    const col=on?((P.labels==='gan')?(GAN_C[DIPAN[p]]||'#ccc'):'#dde5f0'):'#39424f';
+    S.push(`<text x="${q.x}" y="${q.y+15}" text-anchor="middle" font-size="27" font-family="'Noto Serif SC',serif" fill="${col}">${big}</text>`);
+    S.push(`<text x="${q.x}" y="${q.y+35}" text-anchor="middle" fill="#4d5a6b" font-size="10.5">${PL.dir} · ${PL.wx}</text>`);
+  }
+  const pts=P.order.map(pvCenter);
+  const seq=P.closed?pts.concat([pts[0]]):pts;
+  for(let i=0;i<seq.length-1;i++){
+    const a=seq[i], b=seq[i+1];
+    S.push(`<line x1="${a.x}" y1="${a.y}" x2="${b.x}" y2="${b.y}" stroke="${P.color}" stroke-width="2.4" stroke-opacity=".5" stroke-linecap="round"/>`);
+    const t=.76, ax=a.x+(b.x-a.x)*t, ay=a.y+(b.y-a.y)*t, ang=Math.atan2(b.y-a.y,b.x-a.x)*180/Math.PI;
+    S.push(`<g transform="translate(${ax.toFixed(1)},${ay.toFixed(1)}) rotate(${ang.toFixed(1)})"><path d="M -8 -5 L 8 0 L -8 5 Z" fill="${P.color}"/></g>`);
+  }
+  P.order.forEach((p,i)=>{
+    const q=pvCenter(p);
+    S.push(`<circle cx="${q.x-45}" cy="${q.y-45}" r="11.5" fill="#0e131c" stroke="${P.color}" stroke-width="1.3"/>`);
+    S.push(`<text x="${q.x-45}" y="${q.y-41}" text-anchor="middle" fill="${P.color}" font-size="11.5" font-family="'Noto Serif SC',serif">${i+1}</text>`);
+  });
+  const s0=pvCenter(P.order[0]);
+  S.push(`<circle id="pdot" cx="${s0.x}" cy="${s0.y}" r="8.5" fill="${P.color}" style="opacity:0"></circle>`);
+  document.getElementById('pathsvg-wrap').innerHTML=`<svg id="pathsvg" viewBox="0 0 420 420">${S.join('')}</svg>`;
+  const seqTxt=P.order.map((p,i)=>`<b>${i+1}</b> ${gName(p)}${P.labels==='gan'?`（${DIPAN[p]}）`:''}`).join('　→　');
+  document.getElementById('pathdoc').innerHTML=
+    `<h4 style="color:${P.color}">${P.title}</h4>
+     <div class="seq">${seqTxt}</div>
+     <p>${P.desc}</p>
+     <div class="hint">${P.hint}</div>`;
+}
+function buildPathBar(){
+  PATHS=pathDefs();
+  const bar=document.getElementById('pathbar');
+  bar.innerHTML=Object.keys(PATHS).map(k=>
+    `<button class="btn${k===pathMode?' on':''}" data-pm="${k}">${PATHS[k].name}</button>`).join('');
+  bar.querySelectorAll('[data-pm]').forEach(b=> b.onclick=()=>{ pathMode=b.dataset.pm; buildPathBar(); buildPath(); });
+}
+function walkPath(){
+  const P=PATHS[pathMode], dot=document.getElementById('pdot'); if(!dot) return;
+  if(pathTimer){ clearTimeout(pathTimer); pathTimer=null; }
+  let i=0;
+  const step=()=>{
+    if(i>=P.order.length){ dot.style.opacity=0; pathTimer=null; return; }
+    const q=pvCenter(P.order[i]);
+    dot.setAttribute('cx',q.x); dot.setAttribute('cy',q.y); dot.style.opacity=1;
+    i++; pathTimer=setTimeout(step, dur(600));
+  };
+  step();
+}
+document.getElementById('path-walk').onclick=walkPath;
+document.getElementById('path-demo3d').onclick=()=>{
+  const b=document.querySelector('.tabs button[data-tab="view3d"]'); if(b) b.click();
+  setTimeout(spinDemo,320);
+};
+buildPathBar(); buildPath();
+
+/* ---------- slice view ---------- */
+function renderSlice(){
+  const wrap = document.getElementById('slicegrid');
+  const rows = [['shen','神盘'],['tian','天盘'],['ren','人盘'],['di','地盘'],['yin','隐层']];
+  let h='';
+  for(const p of [4,9,2,3,5,7,8,1,6]){
+    const P=PALACES[p], t=TIANPAN[p]||{}, r=RENPAN[p]||{}, s=SHENPAN[p]||{};
+    const marks=(CHART.marks[p]||[]).join(' · ');
+    h += `<div class="pcell" data-p="${p}" style="${p===sel?'outline:1px solid rgba(224,179,60,.6)':''}">
+      <div class="ph">${P.num} ${P.gua}宫<span>${P.dir} · ${P.wx}${marks?' · '+marks:''}</span></div>`;
+    for(const [k,label] of rows){
+      const hl = p===sel ? ' hl' : '';
+      let v='';
+      if(k==='shen') v = `<span style="color:${SHEN_C[s.shen]||'#888'}">${s.shen||'—'}</span>`;
+      if(k==='tian') v = `<span style="color:${XING_C[t.xing]||'#888'}">${t.xing||'—'}</span><small style="color:${GAN_C[t.gan]||'#888'}">${t.gan||''}</small>`;
+      if(k==='ren')  v = `<span style="color:${MEN_C[r.men]||'#888'}">${r.men||'—'}</span>${JIMEN.has(r.men)?'<small>吉门</small>':''}`;
+      if(k==='di')   v = `<span style="color:${GAN_C[DIPAN[p]]||'#888'}">${DIPAN[p]||'—'}</span>`;
+      if(k==='yin')  v = `<span style="color:${GAN_C[ANGAN[p]]||'#888'}">${ANGAN[p]||'—'}</span><small>${DIPAN_SHEN[p]||''}</small>`;
+      h += `<div class="prow${hl}"><span class="pk">${label}</span><span class="pv">${v}</span></div>`;
+    }
+    h += `</div>`;
+  }
+  wrap.innerHTML = h;
+  wrap.querySelectorAll('.pcell').forEach(c=> c.onclick = ()=> select(+c.dataset.p));
+}
+
+/* ---------- theory doc ---------- */
+document.getElementById('theorydoc').innerHTML = `
+<h2>为什么奇门是「立体」的</h2>
+<p>任何一张奇门盘图，都是把<b>四个盘</b>压平后并排摆出来的：</p>
+<table>
+<tr><th>盘</th><th>内容</th><th>本模型中</th></tr>
+<tr><td>神盘</td><td>八神（值符·腾蛇·太阴·六合·白虎·玄武·九地·九天）</td><td>第 5 层（最高）</td></tr>
+<tr><td>天盘</td><td>九星 ＋ 天盘奇仪</td><td>第 4 层</td></tr>
+<tr><td>人盘</td><td>八门</td><td>第 3 层</td></tr>
+<tr><td>地盘</td><td>三奇六仪（不动）</td><td>第 2 层</td></tr>
+<tr><td>隐层</td><td>暗干 · 地盘八神（藏而不显者）</td><td>第 1 层（靠地）</td></tr>
+</table>
+<p>压平之后，所有内容都摊在同一个平面上，于是「一个宫的完整断面」被拆成四行字，<b>竖着读的关系被降级成了横着读的列表</b>。这个模型做的事，就是把它们<b>按原本的高度重新叠回去</b>。</p>
+
+<h4>一、叠层的顺序是有讲究的</h4>
+<p>自下而上：<code>九宫格 → 隐层 → 地盘 → 人盘 → 天盘 → 神盘</code>。<br>
+底盘是坐标，不是盘。往上依次是<b>地、人、天、神</b>——这就是《阴符经》说的「三才」再加一个「神」。<br>
+而<em>隐层放在最下</em>，因为暗干与地盘八神本属"藏"：它在盘面上只用灰色小字表示（你那张图左上角的灰字与右下角的小字八神），恰恰是最容易被忽略、却最常断事的一层。</p>
+
+<h4>二、中宫是竖轴，不是格子</h4>
+<p>平铺图上，中五宫是一个和别的宫一样大的格子；但在立体结构里它其实是<b>一根轴</b>——八宫绕它旋转，它自己不动，而且寄宫于坤二。模型中那条金色竖线就是它。</p>
+
+<h4>三、天盘与人盘，是绕轴旋转的两个圆盘</h4>
+<p>这才是「转盘」二字的本义。以本局（阴遁七局·甲子旬）为例：</p>
+<table>
+<tr><th>盘</th><th>起点（本宫）</th><th>旋转步数</th><th>终点（落宫）</th><th>依据</th></tr>
+<tr><td>天盘</td><td>值符天柱在<b>兑七</b>（旬首甲子戊所居）</td><td>5 步 × 45° = <b>225°</b></td><td>值符落<b>巽四</b></td><td>值符加时干（时干辛在地盘巽四）</td></tr>
+<tr><td>人盘</td><td>值使惊门在<b>兑七</b></td><td>6 步 × 45° = <b>270°</b></td><td>值使落<b>离九</b></td><td>自旬首逆数至时支（甲子至辛未第八位）</td></tr>
+<tr><td>神盘</td><td>值符在<b>兑七</b>（底盘八神）</td><td>5 步 × 45° = <b>225°</b></td><td>值符落<b>巽四</b></td><td>八神随值符</td></tr>
+</table>
+<p>点「起局演示」，你会看见两个圆盘先后转动：天盘转 5 格、人盘转 6 格、神盘随天盘转 5 格。
+<br><b>注意</b>：天盘与人盘转的步数<b>不一样</b>——这正是转盘奇门最关键、也最常被记混的一点。天盘管"星与干"，人盘管"门"，两套算法，两个角速度。</p>
+
+<h4>四、什么叫「竖读一柱」</h4>
+<p>横着看一层，是「盘」；<b>竖着看一宫，才是「宫」</b>。以巽四宫为例，五层分别是：</p>
+<table>
+<tr><th>层</th><th>巽四宫的内容</th></tr>
+<tr><td>神盘</td><td>值符</td></tr>
+<tr><td>天盘</td><td>天柱 戊</td></tr>
+<tr><td>人盘</td><td>死门</td></tr>
+<tr><td>地盘</td><td>辛</td></tr>
+<tr><td>隐层</td><td>暗干 乙 · 地盘八神 六合</td></tr>
+</table>
+<p>这五行合起来，才构成"巽四宫"这个完整的判断单元：<b>值符临死门，天柱携戊加辛，暗藏乙奇</b>。把它摊平成四行字，你还能读；叠成一根柱，你才看得见<em>它们本来就是叠在一起的</em>。</p>
+
+<h4>五、怎么用这个模型</h4>
+<ol style="padding-left:20px;line-height:2">
+<li><b>俯视</b> → 回到你熟悉的平面盘，可核对与手机排盘是否一致。</li>
+<li><b>立体</b> → 看五层的相对位置，理解中宫的轴性。</li>
+<li><b>点任意宫</b> → 右栏给出该宫的五层断面，并标出值符／值使／空亡／驿马。</li>
+<li><b>起局演示</b> → 看懂"转盘"到底在转什么、转多少。</li>
+<li><b>竖读全盘</b> → 九宫 × 五层的一览表，适合抄录与比对。</li>
+</ol>
+
+<h4>六、任意时间起局（页头的日期输入）</h4>
+<p>本文件自带一个可读的排盘引擎（见本页源码 <code>&lt;script id="paipan"&gt;</code>），输入公历北京时间即可整盘重建：</p>
+<table>
+<tr><th>环节</th><th>依据</th></tr>
+<tr><td>年柱</td><td>以<b>立春</b>为界</td></tr>
+<tr><td>月柱</td><td>以<b>节</b>为界（立春起的偶数序节气）</td></tr>
+<tr><td>日柱</td><td>儒略日 + 六十甲子锚点，<b>子时换日</b>（23 时起算次日）</td></tr>
+<tr><td>时柱</td><td>五鼠遁</td></tr>
+<tr><td>节气</td><td>太阳视黄经（Meeus），立春 315°、每节气 +15°</td></tr>
+<tr><td>局数</td><td><b>拆补法</b>：回溯最近的甲/己日（符头），由其地支定上中下元，取该节气三元局数</td></tr>
+<tr><td>阴/阳遁</td><td>冬至…芒种 阳遁；夏至…大雪 阴遁</td></tr>
+<tr><td>旬首宫</td><td>旬首之仪所落之宫（甲子旬戊·甲戌旬己·甲申旬庚·甲午旬辛·甲辰旬壬·甲寅旬癸）——<b>并非恒等于局数宫</b></td></tr>
+<tr><td>值符</td><td>旬首宫之本星，加时干（时干为甲时以旬首仪代之）</td></tr>
+<tr><td>值使</td><td>自旬首宫起，阳遁顺行、阴遁逆行，数至时柱（旬首不计）</td></tr>
+</table>
+<p><b>精度</b>：节气时刻用 Meeus 低精度太阳视黄经（约 0.01°）。已比对天文台 2026 年二十四节气实测数据，
+<b>最大误差 13.9 分、平均 5.7 分、24/24 日期全对</b>。折合到起局上，只有在距节气 15 分钟以内才会翻转判定；
+故「距节气 &lt; 60 分」或「距子夜 &lt; 30 分」时页头会亮出<b>边界提示</b>。</p>
+
+<h4>七、年命：第三个用神（左栏可填）</h4>
+<p>时家奇门的用神有三位，不是一个：<b>日干</b>（求测者）、<b>时干</b>（事体）、<b>年命</b>（此人）。</p>
+<table>
+<tr><th>年命的作用</th><th>怎么读</th></tr>
+<tr><td><b>定「人」</b></td><td>多人同问一事时，用年命分辨谁是主、谁是旁</td></tr>
+<tr><td><b>看「相应」</b></td><td>年命宫与用神宫<b>同宫</b> → 事直接落在此人身上</td></tr>
+<tr><td><b>看「虚实」</b></td><td>年命宫<b>逢空亡</b> → 主心不实、位置悬、事难落实</td></tr>
+<tr><td><b>定应期</b></td><td>年命地支本身参与应期推算</td></tr>
+<tr><td><b>合参</b></td><td>两人年命<b>同宫</b> → 同类相吸，但共用一个落点，吉凶同时落在双方</td></tr>
+</table>
+<p>年命以<b>立春</b>为界取年柱，<b>取年支所落之宫</b>为主；年干另参盘中是否有此干。
+只填年份为粗算（按年中取值），<b>生于 1–2 月者必须填真实日期</b>，否则年柱可能差一年。</p>
+
+<h4>八、方法提醒：「任意时间起局」只用于复盘</h4>
+<p><b>不动不占，无事不占。</b>奇门的「起」由时刻唯一决定，不是由随机数决定——
+所以这里没有、也<b>不应该有</b>「摇卦」按钮（那是六爻、梅花的事）。</p>
+<p>正因如此，页头那个可以随手改的日期输入，<b>正确的用法只有两种</b>：</p>
+<table>
+<tr><th>用法</th><th>说明</th></tr>
+<tr><td><b>✅ 用「问事的那一刻」</b></td><td>心里真正起念的那一刹那起局——这是"感而遂通"，也是奇门唯一正统的起法。点「此刻」即可</td></tr>
+<tr><td><b>✅ 复盘已发生的事</b></td><td>输入某个已知事件的时刻，看当时的局，用事后事实校验读法</td></tr>
+<tr><td><b>❌ 挑一个好看的局</b></td><td>来回改时间直到盘面称心——这已经不是奇门，是自欺</td></tr>
+</table>
+
+<h4>九、符头 / 值符 / 值使 怎么定</h4>
+<p>这三样分属<b>两个层面</b>，最容易混——<b>符头在「日」，值符与值使在「时」，互不隶属</b>。</p>
+<table>
+<tr><th>名词</th><th>层面</th><th>是什么</th><th>怎么定</th></tr>
+<tr><td><b>符头</b></td><td>日</td><td>最近的<b>甲日或己日</b>（每 5 天一个，即五日一元的分界）</td>
+    <td>自<b>用事日</b>往前回溯，找最近的甲/己日（<b>含当日</b>，最多回溯 5 天）</td></tr>
+<tr><td><b>值符</b></td><td>时</td><td>旬首宫的<b>本星</b></td>
+    <td>① 定旬首之仪（甲子旬戊·甲戌旬己·甲申旬庚·甲午旬辛·甲辰旬壬·甲寅旬癸）→
+        ② 在地盘找该仪所落之宫（＝<b>旬首宫</b>）→ ③ 取该宫本星</td></tr>
+<tr><td><b>值使</b></td><td>时</td><td>同一旬首宫的<b>本门</b></td>
+    <td>① 取同一旬首宫 → ② 取该宫本门 → ③ 自旬首宫起按<b>宫数</b>阳顺阴逆<b>数至时柱</b>（旬首不计）</td></tr>
+</table>
+<p><b>符头定元</b>（查表即得）：</p>
+<table>
+<tr><th>符头</th><th>甲子·己卯·甲午·己酉</th><th>甲寅·己巳·甲申·己亥</th><th>甲辰·己丑·甲戌·己未</th></tr>
+<tr><td>元</td><td><b>上元</b>（子午卯酉）</td><td>中元（寅申巳亥）</td><td>下元（辰戌丑未）</td></tr>
+</table>
+<p><b>九星本宫表</b>（定值符用）与<b>八门本宫表</b>（定值使用）：</p>
+<table>
+<tr><th>宫</th><th>坎一</th><th>坤二</th><th>震三</th><th>巽四</th><th>中五</th><th>乾六</th><th>兑七</th><th>艮八</th><th>离九</th></tr>
+<tr><td>本星</td><td>天蓬</td><td>天芮</td><td>天冲</td><td>天辅</td><td>天禽</td><td>天心</td><td>天柱</td><td>天任</td><td>天英</td></tr>
+<tr><td>本门</td><td>休门</td><td>死门</td><td>伤门</td><td>杜门</td><td>—</td><td>开门</td><td>惊门</td><td>生门</td><td>景门</td></tr>
+</table>
+<p><b>本盘实算</b>：日柱己酉 → 天干为「己」→ 符头＝<b>己酉</b>，支酉→<b>上元</b>；
+旬首之仪戊地盘在<b>兑七</b> → 值符＝<b>天柱</b>（兑本星）、值使＝<b>惊门</b>（兑本门）；
+时干辛在巽四 → 值符落<b>巽四</b>；自兑七按宫数逆数 7 步 → 值使落<b>离九</b>。</p>
+<p><b>两个必须记住的坑</b>：</p>
+<ol style="padding-left:20px;line-height:1.95">
+<li><b>旬首宫 ≠ 局数宫</b>。旬首宫是「<b>旬首之仪</b>」的落宫；局数宫只是「<b>戊</b>」的落宫。
+    只有甲子旬（仪为戊）才重合。甲戌旬的旬首宫是「己」之宫，与戊宫无关。</li>
+<li><b>值使走「宫数序」（含中宫），天盘/神盘走「八宫环」（绕中宫）</b>。
+    所以本盘天盘 5 步、人盘 6 步，<b>步数不同是正常的</b>。</li>
+</ol>
+<p><b>经典原文</b>：《烟波钓叟歌》「<b>九宫逢甲为直符，八门值使自分明。符上之门为直使，十时一位堪凭据。直符常遣加时干，直使逆顺遁宫去。</b>」
+《太白阴经·遁甲》「<b>直符者，六甲六仪是也。甲子常为六戊……</b>」「<b>凡课式之法，常以直符加时干。</b>」</p>
+
+<h4>十、逐步演算（以本盘为例）</h4>
+<p>以 <b>2026-10-02 14:54</b> 为例，引擎每一步的中间量如下（均可复算）：</p>
+<table>
+<tr><th>步</th><th>环节</th><th>本盘实算</th></tr>
+<tr><td>①</td><td>公历→儒略日</td><td>北京 14:54 → UT 06:54；JD = 2461315.78750；ΔT=75.1s → JDE = 2461315.78837</td></tr>
+<tr><td>②</td><td>太阳视黄经→节气</td><td>λ = <b>189.1054°</b> 落在 [180°,195°) → <b>秋分</b>（交节 09-23 08:08，实测 08:05）</td></tr>
+<tr><td>③</td><td>年柱（立春界）</td><td>立春 2026-02-04 03:55 ≤ 用事 → 2026；干=(2026−4)%10=2→丙，支=%12=6→午 → <b>丙午</b></td></tr>
+<tr><td>④</td><td>月柱（节界）</td><td>最近之节=白露(i=14) → 月支=2+7=9→酉；月干=五虎遁(丙→庚)+7=3→丁 → <b>丁酉</b></td></tr>
+<tr><td>⑤</td><td>日柱</td><td>JDN=2461316；14:54&lt;23 取当日；(2461316−2451545+54)%60=45 → <b>己酉</b></td></tr>
+<tr><td>⑥</td><td>时柱（五鼠遁）</td><td>时支未(7)；时干=(5%5)×2+7=7→辛 → <b>辛未</b>（六十甲子第 7 位）</td></tr>
+<tr><td>⑦</td><td>定旬</td><td>第 7 位→旬首第 0 位 = <b>甲子旬</b>；XUN_STEPS=7；旬首之仪<b>戊</b>；日柱所在旬=甲辰旬</td></tr>
+<tr><td>⑧</td><td>拆补定元</td><td>回溯甲/己日 → 符头 <b>己酉</b>；支 酉∈子午卯酉 → <b>上元</b></td></tr>
+<tr><td>⑨</td><td>局数</td><td>秋分三元=[7,1,4]，取上元 → <b>7 局</b>；节气序 i=15 → <b>阴遁</b></td></tr>
+<tr><td>⑩</td><td>值符／值使</td><td>旬首仪戊在<b>兑七</b> → 值符<b>天柱</b>、值使<b>惊门</b>；时干辛在<b>巽四</b></td></tr>
+<tr><td>⑪</td><td>天盘（值符加时干）</td><td>八宫环自兑七数 5 步 → 兑七→乾六→坎一→艮八→震三→<b>巽四</b>；<b>225°</b></td></tr>
+<tr><td>⑫</td><td>人盘（值使数旬）</td><td>按宫数逆行 7 步（旬首不计）→ 兑七→乾六→中五→巽四→震三→坤二→坎一→<b>离九</b>；环上等价 <b>6 步=270°</b></td></tr>
+<tr><td>⑬</td><td>神盘</td><td>随值符，环移 <b>5 步=225°</b></td></tr>
+<tr><td>⑭</td><td>暗干</td><td>时干辛加值使宫（离九），阴遁逆布 → 离九辛·艮八壬·兑七癸·乾六丁·中五丙·巽四乙·震三戊·坤二己·坎一庚</td></tr>
+</table>
+<p><b>关键一句</b>：<b>天盘走「八宫环」（绕中宫转），地盘与值使数旬走「宫数序」（穿中宫）</b>——
+本盘天盘 5 步、人盘 6 步，<b>两者步数不同是正常的</b>。这是转盘奇门最容易记混的一点。</p>
+
+<h4>十一、阴符经义理层</h4>
+<p>《黄帝阴符经》全文仅三百余字。它与奇门之间**有一句明文桥梁**：</p>
+<blockquote><b>「爰有奇器，是生万象。八卦甲子，神机鬼藏。」</b>
+——九宫八卦 + 六十甲子，即奇门之器。整个排盘就是这一句的实现。</blockquote>
+<p>本层把经文义理落成<b>可计算量</b>：</p>
+<table>
+<tr><th>经文</th><th>落成的计算量</th></tr>
+<tr><td>爰有奇器…八卦甲子，神机鬼藏</td><td>九宫八卦 + 六十甲子（＝整个排盘 §1–§11）</td></tr>
+<tr><td><b>天有五贼，见之者昌</b></td><td>逐宫统计<b>五行相克</b>（＝贼）：门与宫／星与宫／天盘干与地盘干；并标 <b>门迫</b>（门克宫）／<b>门制</b>（宫克门）</td></tr>
+<tr><td><b>三盗既宜，三才既安</b></td><td>三盘互看：地盗人(宫·门)、人盗天(门·星)、天盗地(干·干)；<b>尽生或比和 → 既宜</b></td></tr>
+<tr><td>天人合<b>德</b>（通行本、李筌本作 合<b>发</b>），万<b>变</b>定基</td><td>天盘干与地盘干成<b>天干五合</b> → 标「天人合德」</td></tr>
+<tr><td><b>人发杀机，天地反复</b></td><td><b>反吟</b>：天盘环移 180°（4 步）</td></tr>
+<tr><td>其盗机也，天下莫能见，莫能知</td><td><b>伏吟</b>：天盘环移 0 步（值符不离本宫，盘面不动）</td></tr>
+<tr><td>阴阳相胜之术，昭昭乎进乎象矣</td><td>阴阳遁与顺逆布仪</td></tr>
+<tr><td>食其时，百骸治；动其机，万化安</td><td>节气定局 + 应期</td></tr>
+</table>
+<p><b>版本差异</b>（本层 20 余种注本并参，详见 <code>docs/阴符经汇集.md</code>）：
+①「<b>移星易宿／地发杀机</b>」八字，<b>唐系多数无</b>（张果本、集注本、李筌疏、云笈七签本），
+<b>宋以后一系有</b>（朱熹邹訢本、刘一明、闵一得、发隐、三皇玉诀）——朱熹明确按语
+「唐褚遂良得太极真人所注本……诸本逸八字，<b>当以褚氏本为正</b>」，通行本亦自注系增补；
+②「天人合<b>发</b>」为多数本，「合<b>德</b>」<b>仅《云笈七签》本</b>；
+③「万<b>变</b>定基」为多数本，「万<b>化</b>定基」是<b>朱熹一系的真实读法</b>（非误字），
+另沈亚夫、蹇昌辰作「万变定<b>机</b>」。</p>
+<p><b>史实一则</b>：那套「传曰」注疏的编入者与传播者是<b>唐·张果</b>（他自序称「偶於道經藏中得《陰符傳》，<b>不知何代人所製</b>，臣遂編之附而入註」——故「传」的<b>原始作者在唐代即已失考</b>）。
+张果<b>系统性纠正李筌</b>（共 14 条，「李筌以阴为暗，符为合，何昧之至也」「李筌等以五贼为五味……诬道之甚也」）
+——而《太白阴经·遁甲》正是李筌所作。<b>同一人的两部书，一部被注家批，一部成了奇门要籍。</b></p>
+<p>另需知：通向奇门的那句「八卦甲子，神机鬼藏」，<b>在某些传本中是被删掉的</b>，靠张果本／褚遂良本才补全
+（王道渊明言「二十一句百一十六字」，本层逐字验算恰好 116 字）。
+更须知道：<b>明代陆西星已明言「兵家者流又竊其『八卦甲子，神機鬼藏』之說以為兵機，不根甚矣」</b>——
+<b>此层关联在文献上并不稳固，这一点古人有言在先。</b></p>
+<p><b>怎么用</b>：门迫／门制、五贼、三盗属<b>逐宫细读的注解</b>（五行相克常见，本盘 8／8 见贼，属正常，
+<b>不能当筛选条件</b>）；真正稀少而有判别力的是<b>伏吟、反吟、天人合德</b>三项盘级信号。
+本层只作识别与提示，<b>不给吉凶打分</b>。</p>
+
+<h4>十二、校验</h4>
+<p>本模型的所有落宫，都不是手抄的，而是由本局参数<b>算</b>出来的：
+<code>阴遁七局 → 戊在兑七 → 地盘逆布 → 旬首宫＝兑七 → 值符天柱、值使惊门 → 时干辛在地盘巽四 → 天盘转5步 → 八门顺环6步 → 八神随值符转5步</code>。
+算完与排盘软件逐宫比对，八宫八门八星八神 32 项全部吻合；暗干依"时干加值使宫、阴遁逆布"复原，九宫亦全部吻合。</p>
+<blockquote>《太白阴经·遁甲总序》："吉凶成败在乎道，不在乎符。"<br>
+模型把结构摆清楚了，怎么用，仍是人的事。</blockquote>
+`;
+
+/* ---------- layer toggles ---------- */
+const togw = document.getElementById('laytog');
+[['base','九宫底格','#4d5a6b'],['yin','隐盘','#9c8ad0'],['di','地盘','#c99a5b'],
+ ['ren','人盘','#4fc27a'],['tian','天盘','#5b9bf0'],['shen','神盘','#e0b33c']].forEach(([k,n,c])=>{
+  const id='tg_'+k;
+  togw.insertAdjacentHTML('beforeend',
+   `<label><input type="checkbox" id="${id}" checked><span class="dot" style="background:${c}"></span>${n}</label>`);
+  setTimeout(()=>{
+    document.getElementById(id).onchange = e=>{
+      document.getElementById('L-'+k).classList.toggle('hide', !e.target.checked);
+    };
+  },0);
+});
+
+/* ---------- 3D controls ---------- */
+const root = document.documentElement;
+/* valFmt: 写入 CSS 变量的值；labelFmt: 显示在滑块右侧的文字 */
+function bind(id,varName,labelFmt,valFmt){
+  const s=document.getElementById(id), v=document.getElementById(id+'v');
+  const upd=()=>{ root.style.setProperty(varName, valFmt? valFmt(s.value) : s.value);
+                  v.textContent = labelFmt? labelFmt(s.value) : s.value; };
+  s.oninput=upd; upd();
+}
+bind('rx','--rx', v=>v+'°');
+bind('rz','--rz', v=>v+'°');
+bind('sep','--sep');
+bind('zm','--zm', v=>(v/100).toFixed(2), v=>(v/100).toFixed(3));
+const sepS = document.getElementById('sep');
+sepS.addEventListener('input', ()=>{ updateAxis(); layoutAll(); });
+
+function layoutAll(){
+  const sep = +sepS.value;
+  for(const key in DOM){
+    const L=document.getElementById('L-'+key);
+    L.style.transform = `translateZ(${SPECZN[key]*sep}px)`;
+  }
+  document.getElementById('L-base').style.transform = 'translateZ(0px)';
+  updateAxis();
+}
+layoutAll();
+
+/* 拖动旋转 */
+const stage=document.getElementById('stage');
+let drag=null;
+stage.addEventListener('pointerdown',e=>{ if(autoTimer) toggleAuto(); drag={x:e.clientX,y:e.clientY,rx:getRx(),rz:getRz()}; stage.setPointerCapture(e.pointerId); });
+stage.addEventListener('pointermove',e=>{
+  if(!drag) return;
+  const dx=e.clientX-drag.x, dy=e.clientY-drag.y;
+  setRx(clamp(drag.rx - dy*0.32, 0, 86));
+  setRz(drag.rz + dx*0.34);
+});
+stage.addEventListener('pointerup',e=>{ drag=null; });
+stage.addEventListener('pointercancel',()=>{ drag=null; });
+stage.addEventListener('wheel',e=>{ e.preventDefault(); const z=clamp(getZm()-e.deltaY*0.06,45,150); setZm(z); },{passive:false});
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const getRx=()=>+document.getElementById('rx').value, setRx=v=>{document.getElementById('rx').value=v;document.getElementById('rx').dispatchEvent(new Event('input'));};
+const getRz=()=>+document.getElementById('rz').value, setRz=v=>{document.getElementById('rz').value=((v+180)%360+360)%360-180;document.getElementById('rz').dispatchEvent(new Event('input'));};
+const getZm=()=>+document.getElementById('zm').value, setZm=v=>{document.getElementById('zm').value=v;document.getElementById('zm').dispatchEvent(new Event('input'));};
+
+document.getElementById('preset-top').onclick=()=>{ setRx(14); setRz(0); };
+document.getElementById('preset-side').onclick=()=>{ setRx(78); setRz(-14); };
+document.getElementById('preset-iso').onclick=()=>{ setRx(54); setRz(-30); };
+document.getElementById('reset').onclick=()=>{
+  setRx(54); setRz(-30); setZm(86);
+  document.getElementById('sep').value=66; sepS.dispatchEvent(new Event('input'));
+  for(const k in DOM){ for(const d of DOM[k]){ d.node.style.transition='transform .3s'; d.node.style.transform=tr(px(d.palace).x,px(d.palace).y); } }
+};
+
+/* ---------- 起局演示：转盘 ---------- */
+const sleep=ms=>new Promise(r=>setTimeout(r,ms));
+async function spinDemo(){
+  if(spinBusy) return;
+  spinBusy=true;
+  const btn=document.getElementById('spin'); btn.textContent='演示中…'; btn.classList.add('on');
+
+  /* 先把三层盘回到「本宫」 */
+  for(const key of ['ren','tian','shen']){
+    for(const d of DOM[key]){
+      d.node.style.transition='none';
+      const b=px(d.base);
+      d.node.style.transform=tr(b.x,b.y);
+    }
+  }
+  await sleep(60);
+  for(const key of ['ren','tian','shen']){
+    for(const d of DOM[key]) d.node.style.transition=`transform ${durS(0.36)}s cubic-bezier(.5,.05,.3,1)`;
+  }
+  /* 神盘随天盘，先合转 → 人盘单独转 */
+  const order=[['tian',K_TIAN],['shen',K_SHEN],['ren',K_REN]];
+  for(const [key,k] of order){
+    for(let s=1;s<=k;s++){
+      for(const d of DOM[key]){
+        const idx=(ri(d.base)+s)%8, n=px(RING[idx]);
+        d.node.style.transform=tr(n.x,n.y);
+      }
+      await sleep(dur(400));
+    }
+    await sleep(dur(160));
+  }
+  spinBusy=false;
+  btn.textContent='▶ 起局演示（转盘）'; btn.classList.remove('on');
+}
+document.getElementById('spin').onclick = spinDemo;
+
+/* ---------- 自动旋转 ---------- */
+function toggleAuto(){
+  const b=document.getElementById('auto');
+  const w=document.getElementById('world');
+  if(autoTimer){ clearInterval(autoTimer); autoTimer=null; b.classList.remove('on'); w.style.transition=''; return; }
+  b.classList.add('on'); w.style.transition='none';
+  autoTimer=setInterval(()=>{ setRz(getRz() + 1/ANIM_SLOW); },33);
+}
+document.getElementById('auto').onclick=toggleAuto;
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('.tabs button').forEach(b=>{
+  b.onclick=()=>{
+    document.querySelectorAll('.tabs button').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+    document.querySelectorAll('.pane').forEach(p=>p.classList.remove('on'));
+    document.getElementById('pane-'+b.dataset.tab).classList.add('on');
+    if(b.dataset.tab==='slice') renderSlice();
+    if(b.dataset.tab==='flat'){ renderFlat(); renderFlatFour(); }
+    if(b.dataset.tab==='path') buildPath();
+    if(b.dataset.tab==='ai') refreshTaskBook();
+  };
+});
+
+/* ---------- 起局：任意时间 → 排盘 → 重建全盘 ---------- */
+const pad2 = n => String(n).padStart(2,'0');
+const dtInput = document.getElementById('dt');
+const setInput = (y,mo,d,hh,mi)=>{ dtInput.value = `${y}-${pad2(mo)}-${pad2(d)}T${pad2(hh)}:${pad2(mi)}`; };
+
+function runChart(y,mo,d,hh,mi){
+  const pp = PAIPAN.paipan(y,mo,d,hh,mi);
+  const meta = {
+    title:`${y}年${mo}月${d}日 ${pad2(hh)}:${pad2(mi)}`,
+    sizhu:pp.sizhu, term:pp.term, yuanName:pp.yuanName, fuTou:pp.fuTou,
+    yindun:pp.yindun, JU:pp.JU, xun:pp.xun, xunDay:pp.xunDay,
+    nearBoundary:pp.nearBoundary, minutesToNext:pp.minutesToNext,
+    minutesFromTerm:pp.minutesFromTerm,
+    termTime:PAIPAN.fmtTime(pp.termTime), nextTerm:pp.nextTerm,
+    nextTime:PAIPAN.fmtTime(pp.nextTime), model:pp.model,
+    nianming: CUR_META ? (CUR_META.nianming || []) : []   /* 换局时保留已填年命 */
+  };
+  CUR_META = meta;
+  applyChart(meta);
+  rebuildAll();
+  return pp;
+}
+/* ---------- 年命（用神第三人，可选） ---------- */
+let CUR_META = DEFAULT_PP;   /* 默认局即当前局，未点「起局」时也能套年命 */
+function parseBirth(v){
+  const m = (v||'').trim().match(/^(\d{4})(?:[-/.](\d{1,2})(?:[-/.](\d{1,2}))?)?$/);
+  if(!m) return null;
+  const y = +m[1];
+  if(!m[2]) return {y, coarse:true};                       /* 只填年份 */
+  return {y, mo:+m[2], d:+(m[3] || 15), coarse:false};
+}
+function applyNianming(){
+  const list = [];
+  for(const [id,label] of [['nm1','甲'],['nm2','乙']]){
+    const raw = document.getElementById(id).value;
+    const out = document.getElementById('nmr'+id.slice(-1));
+    if(!raw.trim()){ if(out) out.textContent=''; continue; }
+    const b = parseBirth(raw);
+    if(!b){ if(out) out.textContent='格式?'; continue; }
+    const gz = b.coarse ? PAIPAN.yearGZ(b.y, 6, 15) : PAIPAN.yearGZ(b.y, b.mo, b.d);
+    if(out) out.textContent = (b.coarse ? '≈' : '') + gz;
+    list.push({label, gz, gan:gz[0], zhi:gz[1], gong:ZHI_GONG[gz[1]], coarse:!!b.coarse});
+  }
+  if(!CUR_META) return;
+  CUR_META.nianming = list;
+  applyChart(CUR_META);
+  rebuildAll();
+}
+document.getElementById('nmgo').onclick  = applyNianming;
+document.getElementById('nmclr').onclick = ()=>{
+  for(const id of ['nm1','nm2','nmr1','nmr2']) document.getElementById(id).value = '';
+  document.getElementById('nmr1').textContent=''; document.getElementById('nmr2').textContent='';
+  applyNianming();
+};
+document.getElementById('nm1').addEventListener('keydown', e=>{ if(e.key==='Enter') applyNianming(); });
+document.getElementById('nm2').addEventListener('keydown', e=>{ if(e.key==='Enter') applyNianming(); });
+/* 换局后：所有视图重建一次 */
+function rebuildAll(){
+  renderHeader();
+  buildLayers();
+  renderSlice(); renderFlat(); renderFlatFour();
+  buildPathBar(); buildPath();
+  select(sel);
+  layoutAll();
+  try{ refreshTaskBook(); }catch(e){}   /* 任务书随局刷新（AI 段在稍后定义，故容错） */
+}
+document.getElementById('go').onclick = ()=>{
+  const v=dtInput.value; if(!v) return;
+  const [dp,tp]=v.split('T');
+  const [Y,Mo,D]=dp.split('-').map(Number);
+  const [H,Mi]=(tp||'00:00').split(':').map(Number);
+  runChart(Y,Mo,D,H,Mi);
+};
+document.getElementById('now').onclick = ()=>{
+  const n=new Date();
+  const a=[n.getFullYear(),n.getMonth()+1,n.getDate(),n.getHours(),n.getMinutes()];
+  setInput(...a); runChart(...a);
+};
+dtInput.addEventListener('keydown', e=>{ if(e.key==='Enter') document.getElementById('go').click(); });
+
+/* ==========================================================================
+   AI 解读：① 生成自包含任务书  ② 可选页内直连 DeepSeek
+   ========================================================================== */
+function buildTaskBook(){
+  const nm = (CHART.nianming && CHART.nianming.length)
+    ? CHART.nianming.map(n=>`   · ${n.label}：年命 ${n.gz} → ${n.gongName}（${n.dir}·${n.wx}）`
+        + (n.kong?`【逢${n.kong}】`:'')
+        + `；该宫 神=${n.stack.shen||'—'} 星=${n.stack.xing||'—'}${n.stack.ganT?'('+n.stack.ganT+')':''} 门=${n.stack.men||'—'} 地盘=${n.stack.ganD||'—'} 暗干=${n.stack.angan||'—'}`
+        + (n.relZhifu?`；与值符宫：${n.relZhifu}`:''))
+        .join('\n')
+    : '   （未提供年命）';
+  const rows = [4,9,2,3,5,7,8,1,6].map(p=>{
+    const P=PALACES[p], t=TIANPAN[p]||{}, r=RENPAN[p]||{}, s=SHENPAN[p]||{};
+    const mk=(CHART.marks[p]||[]).join('/')||'—';
+    return `| ${P.num}${P.gua}（${P.dir}·${P.wx}） | ${s.shen||'—'} | ${t.xing||'—'} | ${t.gan||'—'} | ${r.men||'—'} | ${DIPAN[p]||'—'} | ${DIPAN_SHEN[p]||'—'} | ${ANGAN[p]||'—'} | ${mk} |`;
+  }).join('\n');
+  const riGan = CHART.meta && CHART.meta.sizhu ? CHART.meta.sizhu.day[0] : '—';
+  return `【奇门遁甲 · 盘面事实与解读任务书】
+
+━━ 一、任务性质与纪律 ━━
+这是一张「时家奇门 · 转盘 · 拆补法」的盘。请你以严谨的传统术数研究者身份解读。
+必须遵守：
+1. 严格区分三类内容，**严禁把推断写成事实**：
+   · 盘面事实（第二、三、四节所给，可直接引用）
+   · 传统依据（你引用的术数规则；不确定的名称不要编造）
+   · 关系推断（你的分析，须标明为推断）
+2. **术语必须具象翻译**：说"休门"，要落到现实里是什么意思。
+3. **禁止给吉凶打分**（不得出现"7分""80%会成"这类）。
+4. **禁止宿命论断**，只谈倾向与条件。
+5. 涉及医疗／法律／投资／自伤等高风险领域，只作心态与传统象意参考，
+   并明确建议求助医院、执业律师或专业机构。
+6. 应期只给"窗口"，不给确定日期。
+
+━━ 二、起局事实 ━━
+用事时间：${CHART.title}（北京时间）
+四柱：${CHART.sizhu}
+节气：${CHART.term} · ${CHART.yuanName}（符头 ${CHART.fuTou}）
+局象：${CHART.ju}
+值符：${CHART.zhifu}
+值使：${CHART.zhishi}
+空亡：${CHART.kong}
+驿马：${CHART.ma}
+四盘转数：天盘 ${M.K_TIAN} 步（${M.K_TIAN*45}°）、人盘 ${M.K_REN} 步（${M.K_REN*45}°）、神盘 ${M.K_SHEN} 步（${M.K_SHEN*45}°）；每步 45°
+依据：天盘＝「值符加时干」；人盘＝「值使自旬首按宫数${M.YANG?'顺':'逆'}数至时柱」后整盘刚性环转；神盘随值符。
+注意：天盘与人盘步数可能不同，这是正常的（两套算法、两个角速度）。
+
+━━ 三、九宫全盘 ━━
+| 宫位 | 天盘八神 | 九星 | 天盘奇仪 | 八门 | 地盘奇仪 | 地盘八神 | 暗干 | 标记 |
+| :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- | :-- |
+${rows}
+
+说明：
+· 「地盘奇仪」＝三奇六仪（不动）；「天盘奇仪」随天盘转动，携带其本宫地盘之干。
+· 「地盘八神」＝八神未旋转前的底盘（以旬首宫起值符）；「天盘八神」＝随值符转动之后。
+· 「暗干」＝以时干加值使门宫、${M.YANG?'阳遁顺布':'阴遁逆布'}三奇六仪所得，属"藏"的一层。
+· 中五宫无门无星，庚寄坤二宫。
+
+━━ 四、用神 ━━
+· 日干（求测者）：${riGan}
+· 时干（事体）：${M.SHIGAN}
+· 年命（此人）：
+${nm}
+
+━━ 五、请你按此结构输出 ━━
+1. **核心结论**——先给一句话定性，不含术语。
+2. **盘面依据**——逐条列出据以判断的宫、星、门、神、干（引用上表）。
+3. **情境展开**——把象意翻成现实场景（谁在什么状态、卡在哪）。
+4. **动态窗口（应期）**——依据用神落宫与空亡填实，给倾向性时间窗口。
+5. **现实核验（If–Then 双轨）**——走 A 会怎样、走 B 会怎样，各自代价与收益。
+6. **专业边界**——明确说明这是传统术数参考、不是判决，重大抉择请咨询对应专业人士。
+
+━━ 六、最后 ━━
+用现代汉语，不要文言腔；术语首次出现时用括号给出通俗解释。`;
+}
+
+const AI_LS_KEY = 'qimen.deepseek.key';
+const aiTask   = document.getElementById('ai-task');
+const aiOut    = document.getElementById('ai-out');
+const aiState  = document.getElementById('ai-state');
+const aiKeyEl  = document.getElementById('ai-key');
+const aiSetState = (t,c)=>{ aiState.textContent=t; aiState.className='aistate'+(c?' '+c:''); };
+function refreshTaskBook(){ aiTask.value = buildTaskBook(); }
+document.getElementById('ai-rebuild').onclick = refreshTaskBook;
+document.getElementById('ai-copy').onclick = ()=>{
+  const done = ()=>{ const c=document.getElementById('ai-copied'); c.textContent='已复制 ✓';
+    setTimeout(()=>c.textContent='',1600); };
+  if(navigator.clipboard && navigator.clipboard.writeText)
+    navigator.clipboard.writeText(aiTask.value).then(done, ()=>{ aiTask.select(); document.execCommand('copy'); done(); });
+  else { aiTask.select(); document.execCommand('copy'); done(); }
+};
+try{ const k=localStorage.getItem(AI_LS_KEY); if(k) aiKeyEl.value=k; }catch(e){}
+document.getElementById('ai-clr').onclick = ()=>{
+  aiKeyEl.value=''; try{ localStorage.removeItem(AI_LS_KEY); }catch(e){}
+  aiSetState('Key 已清除');
+};
+document.getElementById('ai-run').onclick = async ()=>{
+  const key   = aiKeyEl.value.trim();
+  const model = (document.getElementById('ai-model').value || 'deepseek-chat').trim();
+  if(!key){ aiSetState('请先填 API Key（或改用左边的任务书）','err'); return; }
+  try{ localStorage.setItem(AI_LS_KEY, key); }catch(e){}
+  const tb = buildTaskBook(); aiTask.value = tb;
+  aiOut.textContent = ''; aiSetState('生成中…（首次可能要 30–90 秒）');
+  const btn = document.getElementById('ai-run'); btn.disabled = true;
+  try{
+    const res = await fetch('https://api.deepseek.com/chat/completions', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+key},
+      body: JSON.stringify({
+        model, stream:true, temperature:1.0,
+        messages:[
+          {role:'system', content:'你是一位严谨的传统术数研究者，精于时家奇门（转盘·拆补法）。不迷信、不打分、不宿命论；术语必具象翻译，推断必标明，高风险领域必引入专业边界。'},
+          {role:'user', content: tb}
+        ]
+      })
+    });
+    if(!res.ok){ const t = await res.text(); throw new Error('HTTP '+res.status+' '+t.slice(0,300)); }
+    const reader = res.body.getReader(), dec = new TextDecoder();
+    let buf='', out='';
+    for(;;){
+      const {done, value} = await reader.read(); if(done) break;
+      buf += dec.decode(value, {stream:true});
+      const lines = buf.split('\n'); buf = lines.pop();
+      for(const ln of lines){
+        if(!ln.startsWith('data:')) continue;
+        const data = ln.slice(5).trim(); if(data === '[DONE]') continue;
+        try{
+          const j = JSON.parse(data);
+          const d = j.choices && j.choices[0] && j.choices[0].delta && j.choices[0].delta.content;
+          if(d){ out += d; aiOut.textContent = out; aiOut.scrollTop = aiOut.scrollHeight; }
+        }catch(e){}
+      }
+    }
+    aiSetState('完成 ✓（' + out.length + ' 字）','ok');
+  }catch(e){ aiSetState('失败：' + e.message, 'err'); }
+  finally{ btn.disabled = false; }
+};
+
+/* ---------- hash 直达：#view3d / #flat / #flat4 / #path / #slice / #theory ---------- */
+(()=>{ const w=location.hash.replace('#','');
+  if(['view3d','flat','flat4','path','slice','theory','ai'].includes(w)){
+    const tab = (w==='flat4') ? 'flat' : w;
+    const b=document.querySelector(`.tabs button[data-tab="${tab}"]`); if(b) b.click();
+    if(w==='flat4') setFlatMode(4);
+  }
+})();
+
+/* ---------- init ---------- */
+setInput(2026,10,2,14,54);      /* 默认局 与 DEFAULT_PP 一致 */
+renderHeader();
+buildLayers();
+layoutAll();
+select(4);
+renderSlice(); renderFlat(); renderFlatFour();
+buildPathBar(); buildPath();
+refreshTaskBook();
+</script>
+</body>
+</html>
